@@ -102,9 +102,17 @@ const elements = {
   keymapButtons: [...document.querySelectorAll("[data-keymap-action]")],
 };
 
+function getInitialSystemFromPage() {
+  const pageSystem = (elements.body?.dataset?.system || "").toLowerCase();
+  if (pageSystem === "gba" || pageSystem === "ds" || pageSystem === "gbc") {
+    return pageSystem;
+  }
+  return "gbc";
+}
+
 const uiState = {
   ...defaultPrefs,
-  currentSystem: "gbc",
+  currentSystem: getInitialSystemFromPage(),
   loadedRom: null,
   awaitingStart: false,
   dsStarted: false,
@@ -1383,7 +1391,7 @@ elements.systemToggleButtons.forEach((button) => {
     const previewSystem = uiState.systemPreference === "auto"
       ? uiState.loadedRom
         ? getSystemFromFile(uiState.loadedRom)
-        : "gbc"
+        : getInitialSystemFromPage()
       : uiState.systemPreference;
     setCurrentSystem(previewSystem);
     persistAndRender();
