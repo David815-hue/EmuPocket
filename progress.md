@@ -1,0 +1,19 @@
+Original prompt: Oye una pregunta sera posible crear un emulador ejecutado puramente en la web de Gameboy Color donde pueda usar pues las teclas y tambien que en juegos como pokemon pueda usar el mouse para escoger ataques, que yo pueda subir la room o no se bueno tu sabreas, dime si es viable
+
+- 2026-03-12: Se inicia un prototipo web desde cero en una carpeta vacia.
+- 2026-03-12: Objetivo de esta iteracion: crear la interfaz del emulador, carga local de ROM, controles de teclado, overlay clicable y una capa adaptadora lista para conectar un core real de GBC.
+- 2026-03-12: Se crea una pagina estatica con canvas 160x144, UI tipo consola, carga local de ROM, save slots en localStorage, overlay de menu clicable y hooks window.render_game_to_text/window.advanceTime.
+- 2026-03-12: Se integra el core de GameBoy-Online como vendor local para emulacion GBC en navegador.
+- 2026-03-12: La UI ahora carga ROMs reales, manda inputs al core, usa save states del emulador y traduce clics del overlay a secuencias de botones pensadas para menus de batalla estilo Pokemon.
+- 2026-03-12: Prueba automatizada en navegador con Chrome local: la pagina carga, una ROM de prueba (`cpu_instrs.gb`) inicia correctamente, el canvas renderiza, el overlay responde y los save slots no generan errores de consola.
+- 2026-03-12: Se rediseña la interfaz como consola virtual mas pulida con botonera fisica clicable, temas visuales, scanlines y paneles de configuracion persistentes.
+- 2026-03-12: El overlay ahora funciona por contextos (`battle-root`, `battle-fight`, `party`, `bag`, `nav`) y encadena transiciones automaticas para hacer mas precisa la seleccion con mouse en juegos como Pokemon.
+- 2026-03-12: Se agrega una capa propia de cheats RAM persistentes basada en escrituras periodicas a memoria del core.
+- 2026-03-13: Se integra soporte dual GB/GBC y GBA con deteccion por extension y cambio visual de sistema.
+- 2026-03-13: La UI ahora comunica mejor el sistema activo, el perfil de controles y la diferencia entre save states (GB/GBC) y SRAM (GBA).
+- 2026-03-13: Se agrega selector manual de sistema (`Auto`, `GB/GBC`, `GBA`) para poder cambiar tambien toda la skin visual antes de cargar una ROM.
+- 2026-03-13: Se separan overlays y presentacion visual entre GB/GBC y GBA, incluyendo transicion visual de cambio de sistema y branding distinto por consola.
+- 2026-03-13: La skin de Game Boy Color se rehace usando una referencia de comunidad, manteniendo canvas real, botones funcionales y animaciones de presion.
+- 2026-03-13: El modo GBA cambia hacia una carcasa inspirada en Game Boy Advance SP y se agrega un flujo opcional de "presiona boton para iniciar" con interruptor persistente en configuracion.
+- 2026-03-13: Se detecta que el modo GBA mezclaba dos skins distintas; se rehacen proporciones y posiciones para acercarlo mucho mas al mockup SP con tapa, bisagra y base separadas.
+- 2026-03-13: Se mapean las clases del mockup SP (`screen-body`, `screen-border`, `pad-container`, `speaker-holder`, `power-button`, `select/start labels`) y se deja un bloque final de overrides para que el look GBA se parezca mucho mas al HTML/CSS de referencia.

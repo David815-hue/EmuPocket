@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GBC Web Prototype</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23284453'/%3E%3Crect x='7' y='6' width='18' height='20' rx='3' fill='%23d8f0cf' stroke='%230d171b' stroke-width='2'/%3E%3Ccircle cx='10' cy='27' r='2' fill='%23ff8b5e'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-theme="teal" data-system="gbc">
+    <main class="shell">
+      <header class="app-header">
+        <div class="app-copy">
+          <p class="eyebrow">Virtual handheld</p>
+          <h1>Pocket Codex</h1>
+          <p class="intro">
+            Sube una ROM local y juega. El menu ahora vive aparte para que la consola
+            sea el foco principal.
+          </p>
+          <p id="status-line" class="status-line">Esperando una ROM local.</p>
+        </div>
+
+        <div class="quick-actions" aria-label="Acciones rapidas">
+          <label class="upload-btn" for="rom-input">Subir ROM</label>
+          <input id="rom-input" type="file" accept=".gb,.gbc,.gba" />
+          <button id="power-btn" type="button">Pausar</button>
+          <button id="speed-btn" type="button">Velocidad x1</button>
+          <button id="fullscreen-btn" type="button">Pantalla completa</button>
+          <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
+            Menu
+          </button>
+        </div>
+      </header>
+
+      <section class="play-layout">
+        <div class="console-zone">
+          <div class="console-stage">
+            <div class="console-topline">
+              <div class="brand-chip" id="brand-chip">Pocket Codex Color</div>
+              <div class="topline-pills">
+                <div class="status-chip" id="system-chip">Sistema GBC</div>
+                <div class="status-chip" id="save-mode-chip">Save states</div>
+                <div class="status-chip" id="overlay-summary">Overlay oculto</div>
+              </div>
+            </div>
+
+            <div class="bezel">
+              <div class="shoulder-row">
+                <button type="button" class="shoulder shoulder-left" data-button="l">L</button>
+                <button type="button" class="shoulder shoulder-right" data-button="r">R</button>
+              </div>
+
+              <div class="screen-area screen-body">
+                <span class="screen-bumper" id="bumper-ul" aria-hidden="true"></span>
+                <span class="screen-bumper" id="bumper-ur" aria-hidden="true"></span>
+                <span class="screen-bumper small-bumper" id="bumper-tm" aria-hidden="true"></span>
+                <span class="screen-bumper small-bumper" id="bumper-ll" aria-hidden="true"></span>
+                <span class="screen-bumper small-bumper" id="bumper-lr" aria-hidden="true"></span>
+                <div class="power">
+                  <div class="indicator">
+                    <span class="led"></span>
+                    <span class="arc"></span>
+                    <span class="arc"></span>
+                    <span class="arc"></span>
+                  </div>
+                  <span class="power-word">POWER</span>
+                </div>
+
+                <div class="power-corner">
+                  <span class="power-dot"></span>
+                  <span class="power-text">POWER</span>
+                </div>
+
+                <div class="screen-border">
+                  <div class="screen-wrap scanlines screen" id="screen-wrap">
+                    <canvas id="screen" width="160" height="144" aria-label="Pantalla del emulador"></canvas>
+                    <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+                    <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+                  </div>
+                  <div class="screen-marquee" id="screen-marquee">GAME BOY COLOR</div>
+                </div>
+
+                <div class="label">
+                  <div class="title">GAME BOY</div>
+                  <div class="subtitle">
+                    <span class="c">C</span><span class="o1">O</span><span class="l">L</span><span class="o2">O</span><span class="r">R</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="console-emblem nintendo" id="console-emblem">Nintendo</div>
+
+              <div class="swivel" aria-hidden="true">
+                <span class="swivel-panel swivel-left"></span>
+                <span class="swivel-panel swivel-center"></span>
+                <span class="swivel-panel swivel-right"></span>
+              </div>
+
+              <div class="gamepad-body">
+                <div class="power-light primary"></div>
+                <div class="power-light secondary"></div>
+                <div class="pad-container power-container">
+                  <button
+                    id="console-power-btn"
+                    class="console-power-btn power-button"
+                    type="button"
+                    aria-label="Boton de encendido"
+                  ></button>
+                </div>
+
+                <div class="controls physical-controls">
+                  <div class="pad-container dpad-container">
+                    <div class="dpad d-pad" aria-label="Cruceta">
+                      <button type="button" class="hardware-btn up" data-button="up"><span>&#9650;</span></button>
+                      <button type="button" class="hardware-btn left" data-button="left"><span>&#9664;</span></button>
+                      <button type="button" class="hardware-btn center" disabled aria-hidden="true"></button>
+                      <button type="button" class="hardware-btn right" data-button="right"><span>&#9654;</span></button>
+                      <button type="button" class="hardware-btn down" data-button="down"><span>&#9660;</span></button>
+                    </div>
+                  </div>
+
+                  <div class="pad-container buttons-container">
+                    <div class="a-b face-buttons">
+                      <button type="button" class="round-btn b-btn" data-button="b">B</button>
+                      <button type="button" class="round-btn a-btn" data-button="a">A</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="meta-row start-select">
+                  <div class="pad-container select-container">
+                    <button type="button" class="pill-btn select select-button" data-button="select" data-label="SELECT">Select</button>
+                  </div>
+                  <div class="pad-container start-container">
+                    <button type="button" class="pill-btn start start-button" data-button="start" data-label="START">Start</button>
+                  </div>
+                  <div class="select-label">SELECT</div>
+                  <div class="select-label shadow">SELECT</div>
+                  <div class="start-label">START</div>
+                  <div class="start-label shadow">START</div>
+                </div>
+
+                <div class="speaker hardware-strip speaker-holder" aria-hidden="true">
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot large-dot"></span>
+                  <span class="dot large-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot large-dot"></span>
+                  <span class="dot large-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                  <span class="dot small-dot"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-dock">
+              <button id="toggle-menu-btn" type="button">Overlay</button>
+              <button id="quick-save-btn" type="button" data-save-slot="1">Guardar</button>
+              <button id="quick-load-btn" type="button" data-load-slot="1">Cargar</button>
+              <button id="quick-menu-btn" type="button">Ajustes</button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          id="drawer-backdrop"
+          class="drawer-backdrop"
+          type="button"
+          aria-label="Cerrar menu"
+          tabindex="-1"
+        ></button>
+
+        <aside id="control-drawer" class="dashboard" aria-label="Panel de ajustes" aria-hidden="true">
+          <div class="drawer-header">
+            <div>
+              <p class="eyebrow">Controles</p>
+              <h2>Menu rapido</h2>
+            </div>
+            <button id="drawer-close-btn" type="button" class="drawer-close" aria-label="Cerrar menu">Cerrar</button>
+          </div>
+
+          <section class="panel-block system-panel">
+            <div class="panel-heading">
+              <h2>Sistema activo</h2>
+              <span class="mini-badge" id="system-badge">gbc</span>
+            </div>
+            <div class="system-toggle" id="system-toggle" role="group" aria-label="Selector de sistema">
+              <button type="button" class="system-toggle-btn" data-system-toggle="auto">Auto</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
+            </div>
+            <p id="system-description">
+              Listo para Game Boy y Game Boy Color. Si subes una ROM GBA, la consola cambia al modo Advance.
+            </p>
+            <div class="system-meta">
+              <div class="system-meta-card">
+                <strong id="control-profile">Perfil GB/GBC</strong>
+                <span id="control-hint">Flechas, Z, X, Enter, Backspace.</span>
+              </div>
+              <div class="system-meta-card">
+                <strong id="save-profile">Guardado por estado</strong>
+                <span id="save-hint">Los slots guardan save states del emulador.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>Overlay tactico</h2>
+              <span class="mini-badge" id="context-badge">battle-root</span>
+            </div>
+            <p>Cambia entre contextos de combate y usa presets de mouse mas precisos.</p>
+            <div class="panel-actions">
+              <button id="drawer-overlay-btn" type="button">Mostrar overlay</button>
+            </div>
+            <div class="form-grid compact">
+              <label>
+                Contexto
+                <select id="overlay-context">
+                  <option value="battle-root">Batalla raiz</option>
+                  <option value="battle-fight">Ataques</option>
+                  <option value="party">Party</option>
+                  <option value="bag">Bag</option>
+                  <option value="nav">Navegacion</option>
+                </select>
+              </label>
+              <label class="checkbox-row">
+                <input id="overlay-auto-follow" type="checkbox" />
+                Seguir flujo automaticamente
+              </label>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>Configuracion</h2>
+              <span class="mini-badge">persistente</span>
+            </div>
+            <div class="form-grid">
+              <label>
+                Tema de consola
+                <select id="theme-select">
+                  <option value="teal">Teal</option>
+                  <option value="sunset">Sunset</option>
+                  <option value="graphite">Graphite</option>
+                </select>
+              </label>
+              <label>
+                Opacidad del overlay
+                <input id="overlay-opacity" type="range" min="45" max="100" step="1" />
+              </label>
+              <label>
+                Volumen
+                <input id="volume-range" type="range" min="0" max="100" step="1" />
+              </label>
+              <label class="checkbox-row">
+                <input id="scanlines-toggle" type="checkbox" />
+                Scanlines en pantalla
+              </label>
+              <label class="checkbox-row">
+                <input id="start-with-button-toggle" type="checkbox" />
+                Iniciar con boton
+              </label>
+            </div>
+
+            <div class="attack-editor">
+              <h3>Nombres rapidos de ataques</h3>
+              <div class="form-grid compact attack-grid">
+                <label>Ataque 1<input data-attack-index="0" type="text" maxlength="18" /></label>
+                <label>Ataque 2<input data-attack-index="1" type="text" maxlength="18" /></label>
+                <label>Ataque 3<input data-attack-index="2" type="text" maxlength="18" /></label>
+                <label>Ataque 4<input data-attack-index="3" type="text" maxlength="18" /></label>
+              </div>
+            </div>
+
+            <div class="panel-actions">
+              <button id="restore-defaults-btn" type="button">Restaurar ajustes</button>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>Cheats / codigos</h2>
+              <span class="mini-badge" id="cheat-count-badge">0 activos</span>
+            </div>
+            <p>
+              Cheats simples por RAM: escribe direccion y valor hexadecimal. Ejemplo:
+              <code>C000</code> y <code>63</code>.
+            </p>
+            <form id="cheat-form" class="form-grid compact">
+              <label>
+                Direccion hex
+                <input id="cheat-address" type="text" inputmode="text" placeholder="C000" />
+              </label>
+              <label>
+                Valor hex
+                <input id="cheat-value" type="text" inputmode="text" placeholder="63" />
+              </label>
+              <label class="span-2">
+                Nota
+                <input id="cheat-label" type="text" maxlength="40" placeholder="HP alta / dinero / flags" />
+              </label>
+              <button id="add-cheat-btn" type="submit">Anadir cheat</button>
+            </form>
+            <div id="cheat-list" class="cheat-list"></div>
+          </section>
+
+          <section class="panel-block debug-panel">
+            <div class="panel-heading">
+              <h2>Estado visible</h2>
+              <span class="mini-badge">debug</span>
+            </div>
+            <pre id="state-output"></pre>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./vendor/gameboy-online/js/other/base64.js"></script>
+    <script src="./vendor/gameboy-online/js/other/resampler.js"></script>
+    <script src="./vendor/gameboy-online/js/other/XAudioServer.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyCore.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyIO.js"></script>
+    <script src="./vendor/gba-js/js/util.js"></script>
+    <script src="./vendor/gba-js/js/core.js"></script>
+    <script src="./vendor/gba-js/js/arm.js"></script>
+    <script src="./vendor/gba-js/js/thumb.js"></script>
+    <script src="./vendor/gba-js/js/mmu.js"></script>
+    <script src="./vendor/gba-js/js/io.js"></script>
+    <script src="./vendor/gba-js/js/audio.js"></script>
+    <script src="./vendor/gba-js/js/video.js"></script>
+    <script src="./vendor/gba-js/js/video/proxy.js"></script>
+    <script src="./vendor/gba-js/js/video/software.js"></script>
+    <script src="./vendor/gba-js/js/irq.js"></script>
+    <script src="./vendor/gba-js/js/keypad.js"></script>
+    <script src="./vendor/gba-js/js/sio.js"></script>
+    <script src="./vendor/gba-js/js/savedata.js"></script>
+    <script src="./vendor/gba-js/js/gpio.js"></script>
+    <script src="./vendor/gba-js/js/gba.js"></script>
+    <script src="./src/app.js?v=20260313-gba-sp-power"></script>
+  </body>
+</html>
