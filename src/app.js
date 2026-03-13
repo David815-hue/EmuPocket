@@ -3,6 +3,21 @@ const GBC_SAVE_PREFIX = "FREEZE_CUSTOM_";
 const GBA_SAVE_PREFIX = "GBA_SAVE_SLOT_";
 const GBA_BIOS_URL = "./vendor/gba-js/resources/bios.bin";
 
+const defaultKeyBindings = {
+  arrowup: "up",
+  arrowdown: "down",
+  arrowleft: "left",
+  arrowright: "right",
+  z: "a",
+  x: "b",
+  c: "x",
+  v: "y",
+  enter: "start",
+  backspace: "select",
+  a: "l",
+  s: "r",
+};
+
 const defaultPrefs = {
   systemPreference: "auto",
   drawerOpen: false,
@@ -14,30 +29,25 @@ const defaultPrefs = {
   volume: 100,
   scanlines: true,
   theme: "teal",
+  filterMode: "lcd",
+  filterIntensity: 55,
+  touchControls: true,
   attackLabels: ["Thunderbolt", "Quick Attack", "Tail Whip", "Thunder Wave"],
   speed: 1,
   cheats: [],
-};
-
-const keyMap = {
-  arrowup: "up",
-  arrowdown: "down",
-  arrowleft: "left",
-  arrowright: "right",
-  z: "a",
-  x: "b",
-  enter: "start",
-  backspace: "select",
-  a: "l",
-  s: "r",
+  keyBindings: defaultKeyBindings,
 };
 
 const elements = {
   body: document.body,
   canvas: document.querySelector("#screen"),
+  dsTopCanvas: document.querySelector("#ds-top-screen"),
+  dsBottomCanvas: document.querySelector("#ds-bottom-screen"),
+  dsScreens: document.querySelector("#ds-screens"),
   screenWrap: document.querySelector("#screen-wrap"),
   screenHint: document.querySelector("#screen-hint"),
   romInput: document.querySelector("#rom-input"),
+  saveFileInput: document.querySelector("#save-file-input"),
   statusLine: document.querySelector("#status-line"),
   stateOutput: document.querySelector("#state-output"),
   menuOverlay: document.querySelector("#menu-overlay"),
@@ -52,14 +62,23 @@ const elements = {
   fullscreenBtn: document.querySelector("#fullscreen-btn"),
   speedBtn: document.querySelector("#speed-btn"),
   consolePowerBtn: document.querySelector("#console-power-btn"),
+  importSaveBtn: document.querySelector("#import-save-btn"),
+  exportSaveBtn: document.querySelector("#export-save-btn"),
+  drawerImportSaveBtn: document.querySelector("#drawer-import-save-btn"),
+  drawerExportSaveBtn: document.querySelector("#drawer-export-save-btn"),
+  resetFilterBtn: document.querySelector("#reset-filter-btn"),
   overlayContext: document.querySelector("#overlay-context"),
   overlayAutoFollow: document.querySelector("#overlay-auto-follow"),
   overlayOpacity: document.querySelector("#overlay-opacity"),
   volumeRange: document.querySelector("#volume-range"),
   scanlinesToggle: document.querySelector("#scanlines-toggle"),
   startWithButtonToggle: document.querySelector("#start-with-button-toggle"),
+  filterSelect: document.querySelector("#filter-select"),
+  filterIntensity: document.querySelector("#filter-intensity"),
+  touchControlsToggle: document.querySelector("#touch-controls-toggle"),
   themeSelect: document.querySelector("#theme-select"),
   restoreDefaultsBtn: document.querySelector("#restore-defaults-btn"),
+  resetKeymapBtn: document.querySelector("#reset-keymap-btn"),
   contextBadge: document.querySelector("#context-badge"),
   overlaySummary: document.querySelector("#overlay-summary"),
   brandChip: document.querySelector("#brand-chip"),
@@ -80,6 +99,7 @@ const elements = {
   cheatCountBadge: document.querySelector("#cheat-count-badge"),
   attackInputs: [...document.querySelectorAll("[data-attack-index]")],
   hardwareButtons: [...document.querySelectorAll("[data-button]")],
+  keymapButtons: [...document.querySelectorAll("[data-keymap-action]")],
 };
 
 const uiState = {
@@ -87,13 +107,17 @@ const uiState = {
   currentSystem: "gbc",
   loadedRom: null,
   awaitingStart: false,
+  dsStarted: false,
+  dsPaused: false,
   paused: false,
   lastInput: "none",
   lastStatusExtra: "",
+  keymapCaptureAction: "",
 };
 
 let gbaCore = null;
 let gbaBiosBuffer = null;
+let dsReadyPromise = null;
 
 window.cout = function (message) {
   console.log("[EMU]", message);
@@ -130,6 +154,7 @@ function loadPrefs() {
     if (!Array.isArray(uiState.cheats)) {
       uiState.cheats = [];
     }
+    uiState.keyBindings = { ...defaultKeyBindings, ...(stored.keyBindings || {}) };
   } catch (error) {
     console.warn("No se pudieron restaurar preferencias", error);
   }
@@ -147,9 +172,13 @@ function persistPrefs() {
     volume: uiState.volume,
     scanlines: uiState.scanlines,
     theme: uiState.theme,
+    filterMode: uiState.filterMode,
+    filterIntensity: uiState.filterIntensity,
+    touchControls: uiState.touchControls,
     attackLabels: uiState.attackLabels,
     cheats: uiState.cheats,
     speed: uiState.speed,
+    keyBindings: uiState.keyBindings,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -162,13 +191,22 @@ function isGbaReady() {
   return typeof gbaCore === "object" && gbaCore !== null && gbaCore.hasRom();
 }
 
+function isDsReady() {
+  return typeof window.WebMelon === "object" && window.WebMelon.emulator.hasEmulator();
+}
+
 function isReady() {
-  return uiState.currentSystem === "gba" ? isGbaReady() : isGbcReady();
+  if (uiState.currentSystem === "gba") return isGbaReady();
+  if (uiState.currentSystem === "ds") return isDsReady();
+  return isGbcReady();
 }
 
 function isPlaying() {
   if (uiState.currentSystem === "gba") {
     return isGbaReady() && !gbaCore.paused;
+  }
+  if (uiState.currentSystem === "ds") {
+    return isDsReady() && uiState.dsStarted && !uiState.dsPaused;
   }
   return isGbcReady() && (window.gameboy.stopEmulator & 2) === 0;
 }
@@ -189,7 +227,10 @@ function getFileExtension(fileName) {
 }
 
 function getSystemFromFile(file) {
-  return getFileExtension(file.name) === "gba" ? "gba" : "gbc";
+  const ext = getFileExtension(file.name);
+  if (ext === "gba") return "gba";
+  if (ext === "nds") return "ds";
+  return "gbc";
 }
 
 function resolveTargetSystem(file) {
@@ -201,6 +242,8 @@ function resolveTargetSystem(file) {
     throw new Error(
       uiState.systemPreference === "gba"
         ? "El modo GBA solo acepta ROMs .gba."
+        : uiState.systemPreference === "ds"
+          ? "El modo DS solo acepta ROMs .nds."
         : "El modo GB/GBC solo acepta ROMs .gb o .gbc.",
     );
   }
@@ -212,8 +255,8 @@ function validateRomFile(file) {
   if (ext === "zip" || ext === "7z" || ext === "rar") {
     return "Sube la ROM descomprimida, no .zip/.7z/.rar.";
   }
-  if (ext !== "gb" && ext !== "gbc" && ext !== "gba") {
-    return "Formato no soportado. Usa .gb, .gbc o .gba.";
+  if (ext !== "gb" && ext !== "gbc" && ext !== "gba" && ext !== "nds") {
+    return "Formato no soportado. Usa .gb, .gbc, .gba o .nds.";
   }
   return "";
 }
@@ -262,6 +305,13 @@ function syncCanvasResolution(system = uiState.currentSystem) {
   if (system === "gba") {
     elements.canvas.width = 240;
     elements.canvas.height = 160;
+    return;
+  }
+  if (system === "ds") {
+    elements.dsTopCanvas.width = 256;
+    elements.dsTopCanvas.height = 192;
+    elements.dsBottomCanvas.width = 256;
+    elements.dsBottomCanvas.height = 192;
     return;
   }
   elements.canvas.width = 160;
@@ -453,6 +503,91 @@ function updateStatus(extra = uiState.lastStatusExtra) {
   elements.statusLine.textContent = `${romText}. Sistema: ${uiState.currentSystem.toUpperCase()}. Estado: ${powerText}. Ultima entrada: ${uiState.lastInput}.${uiState.lastStatusExtra ? ` ${uiState.lastStatusExtra}` : ""}`;
 }
 
+function currentSavePayload() {
+  if (!isReady()) {
+    throw new Error("No hay emulacion activa para exportar.");
+  }
+
+  if (uiState.currentSystem === "ds") {
+    throw new Error("La exportacion DS aun no esta conectada. Por ahora usa el guardado interno.");
+  }
+
+  if (uiState.currentSystem === "gba") {
+    if (!gbaCore.mmu.save) {
+      throw new Error("La ROM GBA aun no genero SRAM.");
+    }
+    gbaCore.storeSavedata();
+    const storageKey = `${gbaCore.SYS_ID}.${gbaCore.mmu.cart.code}`;
+    return {
+      type: "gba-sram",
+      system: uiState.currentSystem,
+      rom: uiState.loadedRom,
+      payload: window.localStorage.getItem(storageKey),
+    };
+  }
+
+  const keyName = gbcSaveSlotName("export");
+  window.saveState(keyName);
+  return {
+    type: "gbc-state",
+    system: uiState.currentSystem,
+    rom: uiState.loadedRom,
+    payload: window.localStorage.getItem(keyName),
+  };
+}
+
+function downloadJsonFile(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentSave() {
+  try {
+    const payload = currentSavePayload();
+    const romName = uiState.loadedRom ? uiState.loadedRom.name.replace(/\.[^.]+$/, "") : "save";
+    downloadJsonFile(`${romName}-${uiState.currentSystem}-save.json`, payload);
+    updateStatus("Save exportado.");
+  } catch (error) {
+    updateStatus(error.message);
+  }
+}
+
+async function importCurrentSave(file) {
+  if (!file) return;
+  try {
+    const raw = await file.text();
+    const data = JSON.parse(raw);
+    if (data.system !== uiState.currentSystem) {
+      throw new Error("El save importado no coincide con el sistema activo.");
+    }
+    if (uiState.currentSystem === "ds") {
+      throw new Error("La importacion DS aun no esta conectada.");
+    }
+    if (uiState.currentSystem === "gba") {
+      if (!isGbaReady()) throw new Error("Carga primero una ROM GBA.");
+      gbaCore.decodeSavedata(data.payload);
+    } else {
+      if (!isGbcReady()) throw new Error("Carga primero una ROM GB/GBC.");
+      const keyName = gbcSaveSlotName("import");
+      window.localStorage.setItem(keyName, data.payload);
+      window.openState(keyName, elements.canvas);
+      setVolume(uiState.volume);
+      applySpeed();
+    }
+    updateStatus("Save importado correctamente.");
+    renderStatePanel();
+  } catch (error) {
+    updateStatus(`No se pudo importar el save: ${error.message}`);
+  } finally {
+    elements.saveFileInput.value = "";
+  }
+}
+
 function renderOverlay() {
   const model = getOverlayModel()[uiState.overlayContext];
   const className = model.className ? `overlay-grid ${model.className}` : "overlay-grid";
@@ -517,16 +652,23 @@ function syncFormState() {
   elements.volumeRange.value = String(uiState.volume);
   elements.scanlinesToggle.checked = uiState.scanlines;
   elements.startWithButtonToggle.checked = uiState.startWithButton;
+  elements.filterSelect.value = uiState.filterMode;
+  elements.filterIntensity.value = String(uiState.filterIntensity);
+  elements.touchControlsToggle.checked = uiState.touchControls;
   elements.themeSelect.value = uiState.theme;
   elements.attackInputs.forEach((input, index) => {
     input.value = uiState.attackLabels[index];
   });
+  renderKeymapButtons();
 }
 
 function applyVisualPrefs() {
   elements.body.dataset.theme = uiState.theme;
   elements.body.dataset.system = uiState.currentSystem;
+  elements.body.dataset.filter = uiState.filterMode;
   elements.body.classList.toggle("drawer-open", uiState.drawerOpen);
+  elements.body.classList.toggle("touch-visible", uiState.touchControls);
+  elements.body.style.setProperty("--filter-intensity", String(uiState.filterIntensity / 100));
   elements.menuOverlay.style.setProperty("--overlay-alpha", String(uiState.overlayOpacity / 100));
   elements.screenWrap.classList.toggle("scanlines", uiState.scanlines);
   elements.screenHint.classList.toggle("hidden", !uiState.awaitingStart);
@@ -547,6 +689,21 @@ function applyVisualPrefs() {
     elements.drawerToggleBtn.setAttribute("aria-expanded", String(uiState.drawerOpen));
     elements.drawerToggleBtn.textContent = uiState.drawerOpen ? "Cerrar menu" : "Menu";
   }
+}
+
+function keyLabelForKey(key) {
+  if (!key) return "Sin tecla";
+  return key.length === 1 ? key.toUpperCase() : key;
+}
+
+function renderKeymapButtons() {
+  elements.keymapButtons.forEach((button) => {
+    const action = button.dataset.keymapAction;
+    const boundKey = Object.keys(uiState.keyBindings).find((key) => uiState.keyBindings[key] === action);
+    const label = button.textContent.split(":")[0];
+    button.textContent = `${label}: ${uiState.keymapCaptureAction === action ? "Pulsa tecla..." : keyLabelForKey(boundKey)}`;
+    button.classList.toggle("listening", uiState.keymapCaptureAction === action);
+  });
 }
 
 function renderSystemToggle() {
@@ -577,6 +734,12 @@ function applySpeed() {
 }
 
 function startCurrentEmulator() {
+  if (uiState.currentSystem === "ds") {
+    if (!isDsReady()) return;
+    window.WebMelon.emulator.resume();
+    uiState.dsPaused = false;
+    return;
+  }
   if (uiState.currentSystem === "gba") {
     if (!isGbaReady()) return;
     gbaCore.runStable();
@@ -606,6 +769,14 @@ function togglePowerState() {
     } else {
       gbaCore.pause();
     }
+  } else if (uiState.currentSystem === "ds") {
+    if (uiState.dsPaused) {
+      window.WebMelon.emulator.resume();
+      uiState.dsPaused = false;
+    } else {
+      window.WebMelon.emulator.pause();
+      uiState.dsPaused = true;
+    }
   } else if (isPlaying()) {
     window.pause();
   } else {
@@ -626,27 +797,34 @@ function refreshMeta() {
     elements.drawerOverlayBtn.textContent = uiState.overlayVisible ? "Ocultar overlay" : "Mostrar overlay";
   }
   const isGba = uiState.currentSystem === "gba";
-  elements.brandChip.textContent = isGba ? "Pocket Codex Advance" : "Pocket Codex Color";
+  const isDs = uiState.currentSystem === "ds";
+  elements.brandChip.textContent = isDs ? "Pocket Codex DS" : isGba ? "Pocket Codex Advance" : "Pocket Codex Color";
   const screenMarquee = document.querySelector("#screen-marquee");
   const consoleEmblem = document.querySelector("#console-emblem");
   if (screenMarquee) {
-    screenMarquee.textContent = isGba ? "GAME BOY ADVANCE" : "GAME BOY COLOR";
+    screenMarquee.textContent = isDs ? "NINTENDO DS" : isGba ? "GAME BOY ADVANCE" : "GAME BOY COLOR";
   }
   if (consoleEmblem) {
     consoleEmblem.textContent = "Nintendo";
   }
-  elements.systemChip.textContent = isGba ? "Sistema GBA" : "Sistema GB/GBC";
-  elements.saveModeChip.textContent = isGba ? "SRAM por slots" : "Save states";
-  elements.systemBadge.textContent = isGba ? "gba" : "gbc";
-  elements.systemDescription.textContent = isGba
+  elements.systemChip.textContent = isDs ? "Sistema DS" : isGba ? "Sistema GBA" : "Sistema GB/GBC";
+  elements.saveModeChip.textContent = isDs ? "Savefile DS" : isGba ? "SRAM por slots" : "Save states";
+  elements.systemBadge.textContent = isDs ? "ds" : isGba ? "gba" : "gbc";
+  elements.systemDescription.textContent = isDs
+    ? "Modo Nintendo DS activo. Se usan dos pantallas y savefiles del cartucho via WebMelon."
+    : isGba
     ? "Modo Advance activo. La pantalla usa proporcion GBA, los hombros L/R quedan activos y los slots guardan SRAM del juego."
     : "Modo Game Boy o Game Boy Color activo. Los slots guardan save states completos del emulador para volver exactamente al mismo punto.";
-  elements.controlProfile.textContent = isGba ? "Perfil GBA" : "Perfil GB/GBC";
-  elements.controlHint.textContent = isGba
+  elements.controlProfile.textContent = isDs ? "Perfil DS" : isGba ? "Perfil GBA" : "Perfil GB/GBC";
+  elements.controlHint.textContent = isDs
+    ? "Flechas o remapeo para DS. La pantalla inferior acepta toque directo con mouse o touch."
+    : isGba
     ? "Flechas, Z, X, Enter, Backspace y hombros L/R con A y S."
     : "Flechas, Z, X, Enter y Backspace para la cruceta y botones clasicos.";
-  elements.saveProfile.textContent = isGba ? "Guardado SRAM" : "Guardado por estado";
-  elements.saveHint.textContent = isGba
+  elements.saveProfile.textContent = isDs ? "Guardado DS" : isGba ? "Guardado SRAM" : "Guardado por estado";
+  elements.saveHint.textContent = isDs
+    ? "Los saves DS usan archivos del cartucho y almacenamiento del navegador."
+    : isGba
     ? "Los slots capturan SRAM del cartucho. Sirve para progreso del juego, no para congelar cada frame."
     : "Los slots guardan save states completos. Vuelves al mismo instante exacto de la emulacion.";
   if (elements.consolePowerBtn) {
@@ -677,6 +855,9 @@ function renderStatePanel() {
 
 function persistAndRender() {
   persistPrefs();
+  if (uiState.currentSystem === "ds" && typeof window.WebMelon === "object") {
+    applyDsInputSettings();
+  }
   applyVisualPrefs();
   renderStatePanel();
   updateStatus();
@@ -699,6 +880,12 @@ function gbaButtonIndex(button) {
 }
 
 function pressInput(button) {
+  if (uiState.currentSystem === "ds") {
+    const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
+    if (!key) return;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key }));
+    return;
+  }
   if (uiState.currentSystem === "gba") {
     if (!isGbaReady()) return;
     const index = gbaButtonIndex(button);
@@ -712,6 +899,12 @@ function pressInput(button) {
 }
 
 function releaseInput(button) {
+  if (uiState.currentSystem === "ds") {
+    const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
+    if (!key) return;
+    window.dispatchEvent(new KeyboardEvent("keyup", { key }));
+    return;
+  }
   if (uiState.currentSystem === "gba") {
     if (!isGbaReady()) return;
     const index = gbaButtonIndex(button);
@@ -773,6 +966,15 @@ function gbaSaveSlotName(slot) {
 }
 
 function teardownCurrentEmulator() {
+  if (isDsReady()) {
+    try {
+      window.WebMelon.emulator.shutdown();
+    } catch (error) {
+      console.warn("No se pudo detener DS", error);
+    }
+    uiState.dsStarted = false;
+    uiState.dsPaused = false;
+  }
   if (isGbaReady()) {
     gbaCore.pause();
   }
@@ -806,6 +1008,46 @@ async function ensureGbaCore() {
 
   gbaCore.setBios(gbaBiosBuffer);
   return gbaCore;
+}
+
+function applyDsInputSettings() {
+  if (!window.WebMelon) return;
+  const settings = window.WebMelon.input.getInputSettings();
+  const nextKeybinds = {};
+  const dsButtonMap = {
+    up: "DPAD_UP",
+    down: "DPAD_DOWN",
+    left: "DPAD_LEFT",
+    right: "DPAD_RIGHT",
+    a: "A",
+    b: "B",
+    x: "X",
+    y: "Y",
+    start: "START",
+    select: "SELECT",
+    l: "L",
+    r: "R",
+  };
+  Object.entries(uiState.keyBindings).forEach(([key, action]) => {
+    const dsButtonName = dsButtonMap[action];
+    if (!dsButtonName) return;
+    nextKeybinds[key] = window.WebMelon.constants.DS_INPUT_MAP[dsButtonName];
+  });
+  settings.keybinds = nextKeybinds;
+  window.WebMelon.input.setInputSettings(settings);
+}
+
+function ensureDsRuntime() {
+  if (dsReadyPromise) {
+    return dsReadyPromise;
+  }
+  dsReadyPromise = new Promise((resolve) => {
+    window.WebMelon.assembly.addLoadListener(() => {
+      applyDsInputSettings();
+      resolve(window.WebMelon);
+    });
+  });
+  return dsReadyPromise;
 }
 
 async function loadGbcRom(file) {
@@ -859,12 +1101,52 @@ async function loadGbaRom(file) {
   renderStatePanel();
 }
 
+async function loadDsRom(file) {
+  const ds = await ensureDsRuntime();
+  const romData = new Uint8Array(await file.arrayBuffer());
+
+  ds.cart.createCart();
+  ds.storage.createDirectory("/roms");
+  ds.storage.write("/roms/game.nds", romData);
+  ds.emulator.createEmulator();
+  if (!ds.cart.loadFileIntoCart("/roms/game.nds")) {
+    throw new Error("No se pudo cargar la ROM DS.");
+  }
+
+  await new Promise((resolve) => {
+    ds.storage.onPrepare(() => {
+      const gameCode = ds.cart.getUnloadedCartCode();
+      ds.emulator.setSavePath(`/savefiles/${gameCode}.sav`);
+      ds.emulator.loadFreeBIOS();
+      ds.emulator.loadCart();
+      ds.emulator.startEmulation("ds-top-screen", "ds-bottom-screen");
+      uiState.dsStarted = true;
+      uiState.dsPaused = false;
+      resolve(null);
+    });
+    ds.storage.prepareVirtualFilesystem();
+  });
+
+  setCurrentSystem("ds");
+  uiState.loadedRom = {
+    name: file.name,
+    size: romData.byteLength,
+  };
+  uiState.lastInput = "rom_loaded";
+  uiState.awaitingStart = false;
+  applyDsInputSettings();
+  updateStatus("Core DS inicializado.");
+  renderStatePanel();
+}
+
 async function loadRom(file) {
   teardownCurrentEmulator();
   uiState.awaitingStart = false;
   const targetSystem = resolveTargetSystem(file);
   if (targetSystem === "gba") {
     await loadGbaRom(file);
+  } else if (targetSystem === "ds") {
+    await loadDsRom(file);
   } else {
     await loadGbcRom(file);
   }
@@ -893,6 +1175,11 @@ function saveToSlot(slot) {
     return;
   }
 
+  if (uiState.currentSystem === "ds") {
+    updateStatus("DS usa savefiles internos. Usa Importar/Exportar save.");
+    return;
+  }
+
   window.saveState(gbcSaveSlotName(slot));
   afterInput(`save_slot_${slot}`, `Save state guardado en slot ${slot}.`);
 }
@@ -911,6 +1198,11 @@ function loadFromSlot(slot) {
     }
     gbaCore.decodeSavedata(savedata);
     afterInput(`load_slot_${slot}`, `SRAM de GBA cargado desde slot ${slot}.`);
+    return;
+  }
+
+  if (uiState.currentSystem === "ds") {
+    updateStatus("DS usa savefiles internos. Usa Importar/Exportar save.");
     return;
   }
 
@@ -975,7 +1267,17 @@ function setDefaults() {
 window.render_game_to_text = function () {
   const system = uiState.currentSystem;
   const core =
-    system === "gba" && isGbaReady()
+    system === "ds" && isDsReady()
+      ? {
+          title: window.WebMelon.emulator.getGameTitle(),
+          started: uiState.dsStarted,
+          paused: uiState.dsPaused,
+          canvas: {
+            top: { width: elements.dsTopCanvas.width, height: elements.dsTopCanvas.height },
+            bottom: { width: elements.dsBottomCanvas.width, height: elements.dsBottomCanvas.height },
+          },
+        }
+      : system === "gba" && isGbaReady()
       ? {
           title: gbaCore.mmu.cart.title,
           code: gbaCore.mmu.cart.code,
@@ -1004,6 +1306,11 @@ window.render_game_to_text = function () {
         enabled: uiState.startWithButton,
         awaitingStart: uiState.awaitingStart,
       },
+      visual: {
+        filterMode: uiState.filterMode,
+        filterIntensity: uiState.filterIntensity,
+        touchControls: uiState.touchControls,
+      },
       overlay: {
         visible: uiState.overlayVisible,
         context: uiState.overlayContext,
@@ -1029,6 +1336,12 @@ window.render_game_to_text = function () {
 
 window.advanceTime = function (ms) {
   if (!isReady()) return;
+  if (uiState.currentSystem === "ds") {
+    window.setTimeout(() => {
+      renderStatePanel();
+    }, ms);
+    return;
+  }
   if (uiState.currentSystem === "gba") {
     const frames = Math.max(1, Math.round(ms / 16));
     for (let index = 0; index < frames; index += 1) {
@@ -1103,6 +1416,26 @@ elements.romInput.addEventListener("change", async (event) => {
 
 document.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+  if (uiState.keymapCaptureAction) {
+    event.preventDefault();
+    if (key === "escape") {
+      uiState.keymapCaptureAction = "";
+      renderKeymapButtons();
+      updateStatus("Escucha de remapeo cancelada.");
+      return;
+    }
+    Object.keys(uiState.keyBindings).forEach((boundKey) => {
+      if (uiState.keyBindings[boundKey] === uiState.keymapCaptureAction) {
+        delete uiState.keyBindings[boundKey];
+      }
+    });
+    uiState.keyBindings[key] = uiState.keymapCaptureAction;
+    const action = uiState.keymapCaptureAction;
+    uiState.keymapCaptureAction = "";
+    persistAndRender();
+    updateStatus(`Tecla ${keyLabelForKey(key)} asignada a ${action}.`);
+    return;
+  }
   if (key === "escape" && uiState.drawerOpen) {
     event.preventDefault();
     setDrawerOpen(false);
@@ -1113,7 +1446,7 @@ document.addEventListener("keydown", (event) => {
     toggleFullscreen();
     return;
   }
-  const mapped = keyMap[key];
+  const mapped = uiState.keyBindings[key];
   if (!mapped || event.repeat) return;
   event.preventDefault();
   if (!isReady()) {
@@ -1126,7 +1459,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keyup", (event) => {
   const key = event.key.toLowerCase();
-  const mapped = keyMap[key];
+  const mapped = uiState.keyBindings[key];
   if (!mapped || !isReady()) return;
   event.preventDefault();
   releaseInput(mapped);
@@ -1254,6 +1587,16 @@ elements.scanlinesToggle.addEventListener("change", (event) => {
   persistAndRender();
 });
 
+elements.filterSelect.addEventListener("change", (event) => {
+  uiState.filterMode = event.target.value;
+  persistAndRender();
+});
+
+elements.filterIntensity.addEventListener("input", (event) => {
+  uiState.filterIntensity = Number(event.target.value);
+  persistAndRender();
+});
+
 elements.startWithButtonToggle.addEventListener("change", (event) => {
   uiState.startWithButton = event.target.checked;
   if (!uiState.startWithButton && uiState.awaitingStart) {
@@ -1261,6 +1604,11 @@ elements.startWithButtonToggle.addEventListener("change", (event) => {
     startCurrentEmulator();
     updateStatus("Arranque automatico activado. La ROM inicio de inmediato.");
   }
+  persistAndRender();
+});
+
+elements.touchControlsToggle.addEventListener("change", (event) => {
+  uiState.touchControls = event.target.checked;
   persistAndRender();
 });
 
@@ -1280,6 +1628,44 @@ elements.attackInputs.forEach((input) => {
 elements.restoreDefaultsBtn.addEventListener("click", () => {
   setDefaults();
   afterInput("restore_defaults", "Preferencias restauradas.");
+});
+
+elements.resetFilterBtn.addEventListener("click", () => {
+  uiState.filterMode = defaultPrefs.filterMode;
+  uiState.filterIntensity = defaultPrefs.filterIntensity;
+  persistAndRender();
+  updateStatus("Filtro visual restaurado.");
+});
+
+elements.importSaveBtn.addEventListener("click", () => {
+  elements.saveFileInput.click();
+});
+
+elements.drawerImportSaveBtn.addEventListener("click", () => {
+  elements.saveFileInput.click();
+});
+
+elements.exportSaveBtn.addEventListener("click", exportCurrentSave);
+elements.drawerExportSaveBtn.addEventListener("click", exportCurrentSave);
+
+elements.saveFileInput.addEventListener("change", (event) => {
+  const file = event.target.files && event.target.files[0];
+  importCurrentSave(file);
+});
+
+elements.keymapButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    uiState.keymapCaptureAction = button.dataset.keymapAction;
+    renderKeymapButtons();
+    updateStatus(`Pulsa la nueva tecla para ${button.dataset.keymapAction}. Escape cancela.`);
+  });
+});
+
+elements.resetKeymapBtn.addEventListener("click", () => {
+  uiState.keyBindings = { ...defaultKeyBindings };
+  uiState.keymapCaptureAction = "";
+  persistAndRender();
+  updateStatus("Remapeo restaurado.");
 });
 
 elements.cheatForm.addEventListener("submit", addCheat);

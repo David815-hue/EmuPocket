@@ -23,15 +23,23 @@
           <p id="status-line" class="status-line">Esperando una ROM local.</p>
         </div>
 
-        <div class="quick-actions" aria-label="Acciones rapidas">
-          <label class="upload-btn" for="rom-input">Subir ROM</label>
-          <input id="rom-input" type="file" accept=".gb,.gbc,.gba" />
-          <button id="power-btn" type="button">Pausar</button>
-          <button id="speed-btn" type="button">Velocidad x1</button>
-          <button id="fullscreen-btn" type="button">Pantalla completa</button>
-          <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
-            Menu
-          </button>
+        <div class="topbar">
+          <div class="quick-actions" aria-label="Acciones rapidas">
+            <label class="upload-btn" for="rom-input">Subir ROM</label>
+            <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds" />
+            <button id="power-btn" type="button">Pausar</button>
+            <button id="speed-btn" type="button">Velocidad x1</button>
+            <button id="fullscreen-btn" type="button">Pantalla completa</button>
+            <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
+              Menu
+            </button>
+          </div>
+
+          <div class="quick-strip" aria-label="Acciones de sesion">
+            <button id="import-save-btn" type="button">Importar save</button>
+            <button id="export-save-btn" type="button">Exportar save</button>
+            <button id="reset-filter-btn" type="button">Reset visual</button>
+          </div>
         </div>
       </header>
 
@@ -77,8 +85,33 @@
                 <div class="screen-border">
                   <div class="screen-wrap scanlines screen" id="screen-wrap">
                     <canvas id="screen" width="160" height="144" aria-label="Pantalla del emulador"></canvas>
+                    <div class="ds-screens" id="ds-screens" aria-hidden="true">
+                      <div class="ds-speaker-column ds-speaker-left" aria-hidden="true">
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                      </div>
+                      <canvas id="ds-top-screen" width="256" height="192" aria-label="Pantalla superior Nintendo DS"></canvas>
+                      <div class="ds-speaker-column ds-speaker-right" aria-hidden="true">
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                        <span class="mini-circle"></span>
+                      </div>
+                    </div>
                     <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
                     <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+                  </div>
+                  <div class="ds-corner-pads" aria-hidden="true">
+                    <span class="black-square blk-top-left"></span>
+                    <span class="black-square blk-top-right"></span>
+                    <span class="black-square blk-bot-left"></span>
+                    <span class="black-square blk-bot-right"></span>
                   </div>
                   <div class="screen-marquee" id="screen-marquee">GAME BOY COLOR</div>
                 </div>
@@ -97,6 +130,12 @@
                 <span class="swivel-panel swivel-left"></span>
                 <span class="swivel-panel swivel-center"></span>
                 <span class="swivel-panel swivel-right"></span>
+                <span class="midbar-line left-line"></span>
+                <span class="midbar-line right-line"></span>
+                <span class="battery-light battery-left"></span>
+                <span class="battery-light battery-right"></span>
+                <span class="mic-hole"></span>
+                <span class="mic-text">mic</span>
               </div>
 
               <div class="gamepad-body">
@@ -113,19 +152,29 @@
 
                 <div class="controls physical-controls">
                   <div class="pad-container dpad-container">
-                    <div class="dpad d-pad" aria-label="Cruceta">
-                      <button type="button" class="hardware-btn up" data-button="up"><span>&#9650;</span></button>
-                      <button type="button" class="hardware-btn left" data-button="left"><span>&#9664;</span></button>
+                    <div class="dpad d-pad cross-box" aria-label="Cruceta">
+                      <button type="button" class="hardware-btn top-cross up" data-button="up"><span>&#9650;</span><span class="verti-line verti-top"></span></button>
+                      <button type="button" class="hardware-btn left-cross left" data-button="left"><span>&#9664;</span><span class="horiz-line horiz-left"></span></button>
                       <button type="button" class="hardware-btn center" disabled aria-hidden="true"></button>
-                      <button type="button" class="hardware-btn right" data-button="right"><span>&#9654;</span></button>
-                      <button type="button" class="hardware-btn down" data-button="down"><span>&#9660;</span></button>
+                      <button type="button" class="hardware-btn right-cross right" data-button="right"><span>&#9654;</span><span class="horiz-line horiz-right"></span></button>
+                      <button type="button" class="hardware-btn bot-cross down" data-button="down"><span>&#9660;</span><span class="verti-line verti-bot"></span></button>
                     </div>
                   </div>
 
                   <div class="pad-container buttons-container">
-                    <div class="a-b face-buttons">
+                    <div class="a-b face-buttons ds-face-buttons">
+                      <button type="button" class="round-btn x-btn" data-button="x">X</button>
+                      <button type="button" class="round-btn y-btn" data-button="y">Y</button>
                       <button type="button" class="round-btn b-btn" data-button="b">B</button>
                       <button type="button" class="round-btn a-btn" data-button="a">A</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ds-bottom-screen-shell" aria-hidden="true">
+                  <div class="screen-outer">
+                    <div class="screen-inner">
+                      <canvas id="ds-bottom-screen" width="256" height="192" aria-label="Pantalla inferior Nintendo DS"></canvas>
                     </div>
                   </div>
                 </div>
@@ -170,6 +219,29 @@
               <button id="quick-load-btn" type="button" data-load-slot="1">Cargar</button>
               <button id="quick-menu-btn" type="button">Ajustes</button>
             </div>
+
+            <div class="touch-controls" id="touch-controls" aria-label="Controles tactiles">
+              <div class="touch-side touch-left">
+                <div class="touch-dpad">
+                  <button type="button" class="touch-btn touch-up" data-button="up">▲</button>
+                  <button type="button" class="touch-btn touch-left-btn" data-button="left">◀</button>
+                  <button type="button" class="touch-btn touch-right-btn" data-button="right">▶</button>
+                  <button type="button" class="touch-btn touch-down" data-button="down">▼</button>
+                </div>
+              </div>
+              <div class="touch-middle">
+                <button type="button" class="touch-pill" data-button="select">Select</button>
+                <button type="button" class="touch-pill" data-button="start">Start</button>
+              </div>
+              <div class="touch-side touch-right">
+                <button type="button" class="touch-round touch-b" data-button="b">B</button>
+                <button type="button" class="touch-round touch-a" data-button="a">A</button>
+                <div class="touch-shoulders">
+                  <button type="button" class="touch-shoulder" data-button="l">L</button>
+                  <button type="button" class="touch-shoulder" data-button="r">R</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -199,6 +271,7 @@
               <button type="button" class="system-toggle-btn" data-system-toggle="auto">Auto</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
             </div>
             <p id="system-description">
               Listo para Game Boy y Game Boy Color. Si subes una ROM GBA, la consola cambia al modo Advance.
@@ -272,6 +345,23 @@
                 <input id="start-with-button-toggle" type="checkbox" />
                 Iniciar con boton
               </label>
+              <label>
+                Filtro visual
+                <select id="filter-select">
+                  <option value="lcd">LCD</option>
+                  <option value="pixel">Pixel perfect</option>
+                  <option value="soft">Blur off</option>
+                  <option value="boost">Color boost</option>
+                </select>
+              </label>
+              <label>
+                Intensidad filtro
+                <input id="filter-intensity" type="range" min="0" max="100" step="1" />
+              </label>
+              <label class="checkbox-row">
+                <input id="touch-controls-toggle" type="checkbox" />
+                Controles tactiles
+              </label>
             </div>
 
             <div class="attack-editor">
@@ -286,6 +376,44 @@
 
             <div class="panel-actions">
               <button id="restore-defaults-btn" type="button">Restaurar ajustes</button>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>Saves</h2>
+              <span class="mini-badge">archivo</span>
+            </div>
+            <p>Importa o exporta un save local de la sesion actual sin abrir la consola del navegador.</p>
+            <div class="panel-actions">
+              <button id="drawer-import-save-btn" type="button">Importar save</button>
+              <button id="drawer-export-save-btn" type="button">Exportar save</button>
+            </div>
+            <input id="save-file-input" type="file" accept=".sav,.json,.txt" hidden />
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>Remapeo de teclas</h2>
+              <span class="mini-badge">input</span>
+            </div>
+              <p>Pulsa un boton y luego presiona la nueva tecla. Escape cancela la escucha.</p>
+              <div class="keymap-grid" id="keymap-grid">
+                <button type="button" class="keymap-btn" data-keymap-action="up">Arriba</button>
+                <button type="button" class="keymap-btn" data-keymap-action="down">Abajo</button>
+                <button type="button" class="keymap-btn" data-keymap-action="left">Izquierda</button>
+                <button type="button" class="keymap-btn" data-keymap-action="right">Derecha</button>
+                <button type="button" class="keymap-btn" data-keymap-action="a">Boton A</button>
+                <button type="button" class="keymap-btn" data-keymap-action="b">Boton B</button>
+                <button type="button" class="keymap-btn" data-keymap-action="x">Boton X</button>
+                <button type="button" class="keymap-btn" data-keymap-action="y">Boton Y</button>
+                <button type="button" class="keymap-btn" data-keymap-action="start">Start</button>
+                <button type="button" class="keymap-btn" data-keymap-action="select">Select</button>
+                <button type="button" class="keymap-btn" data-keymap-action="l">Hombro L</button>
+              <button type="button" class="keymap-btn" data-keymap-action="r">Hombro R</button>
+            </div>
+            <div class="panel-actions">
+              <button id="reset-keymap-btn" type="button">Reset teclas</button>
             </div>
           </section>
 
@@ -348,6 +476,8 @@
     <script src="./vendor/gba-js/js/savedata.js"></script>
     <script src="./vendor/gba-js/js/gpio.js"></script>
     <script src="./vendor/gba-js/js/gba.js"></script>
-    <script src="./src/app.js?v=20260313-gba-sp-power"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
+    <script src="./src/app.js?v=20260313-ds-core"></script>
   </body>
 </html>
