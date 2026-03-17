@@ -8,7 +8,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23284453'/%3E%3Crect x='7' y='6' width='18' height='20' rx='3' fill='%23d8f0cf' stroke='%230d171b' stroke-width='2'/%3E%3Ccircle cx='10' cy='27' r='2' fill='%23ff8b5e'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./gbc.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260317-gba-screenfix" />
+    <link rel="stylesheet" href="./mockups-main.css?v=20260317-gba-screenfix" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   </head>
   <body data-theme="teal" data-system="gbc">
@@ -56,260 +57,7 @@
               </div>
             </div>
 
-            <div class="bezel">
-              <div class="shoulder-row">
-                <button type="button" class="shoulder shoulder-left" data-button="l">L</button>
-                <button type="button" class="shoulder shoulder-right" data-button="r">R</button>
-              </div>
-
-              <div class="screen-area screen-body">
-                <span class="screen-bumper" id="bumper-ul" aria-hidden="true"></span>
-                <span class="screen-bumper" id="bumper-ur" aria-hidden="true"></span>
-                <span class="screen-bumper small-bumper" id="bumper-tm" aria-hidden="true"></span>
-                <span class="screen-bumper small-bumper" id="bumper-ll" aria-hidden="true"></span>
-                <span class="screen-bumper small-bumper" id="bumper-lr" aria-hidden="true"></span>
-                <div class="power">
-                  <div class="indicator">
-                    <span class="led"></span>
-                    <span class="arc"></span>
-                    <span class="arc"></span>
-                    <span class="arc"></span>
-                  </div>
-                  <span class="power-word">POWER</span>
-                </div>
-
-                <div class="power-corner">
-                  <span class="power-dot"></span>
-                  <span class="power-text">POWER</span>
-                </div>
-
-                <div class="screen-border">
-                  <div class="screen-wrap scanlines screen" id="screen-wrap">
-                    <canvas id="screen" width="160" height="144" aria-label="Pantalla del emulador"></canvas>
-                    <div class="ds-screens" id="ds-screens" aria-hidden="true">
-                      <div class="ds-speaker-column ds-speaker-left" aria-hidden="true">
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                      </div>
-                      <canvas id="ds-top-screen" width="256" height="192" aria-label="Pantalla superior Nintendo DS"></canvas>
-                      <div class="ds-speaker-column ds-speaker-right" aria-hidden="true">
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                        <span class="mini-circle"></span>
-                      </div>
-                    </div>
-                    <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
-                    <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
-                  </div>
-                  <div class="ds-corner-pads" aria-hidden="true">
-                    <span class="black-square blk-top-left"></span>
-                    <span class="black-square blk-top-right"></span>
-                    <span class="black-square blk-bot-left"></span>
-                    <span class="black-square blk-bot-right"></span>
-                  </div>
-                  <div class="screen-marquee" id="screen-marquee">GAME BOY COLOR</div>
-                </div>
-
-                <div class="label">
-                  <div class="title">GAME BOY</div>
-                  <div class="subtitle">
-                    <span class="c">C</span><span class="o1">O</span><span class="l">L</span><span class="o2">O</span><span class="r">R</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="console-emblem nintendo" id="console-emblem">Nintendo</div>
-
-              <div class="swivel" aria-hidden="true">
-                <span class="swivel-panel swivel-left"></span>
-                <span class="swivel-panel swivel-center"></span>
-                <span class="swivel-panel swivel-right"></span>
-                <span class="midbar-line left-line"></span>
-                <span class="midbar-line right-line"></span>
-                <span class="battery-light battery-left"></span>
-                <span class="battery-light battery-right"></span>
-                <span class="mic-hole"></span>
-                <span class="mic-text">mic</span>
-              </div>
-
-              <!-- New GBC Specific UI -->
-              <div class="gbc-mockup-ui">
-                <div class="controls">
-                  <div class="dpad">
-                    <div class="up" data-button="up"><i class="fa fa-caret-up"></i></div>
-                    <div class="right" data-button="right"><i class="fa fa-caret-right"></i></div>
-                    <div class="down" data-button="down"><i class="fa fa-caret-down"></i></div>
-                    <div class="left" data-button="left"><i class="fa fa-caret-left"></i></div>
-                    <div class="middle"></div>
-                  </div>
-                  <div class="a-b">
-                    <div class="b" data-button="b">B</div>
-                    <div class="a" data-button="a">A</div>
-                  </div>
-                </div>
-
-                <div class="start-select">
-                  <div class="select" data-button="select">SELECT</div>
-                  <div class="start" data-button="start">START</div>
-                </div>
-
-                <div class="speaker">
-                  <div class="dot placeholder"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot placeholder"></div>
-                  
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-
-                  <div class="dot placeholder"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot closed"></div>
-                  <div class="dot open"></div>
-                  <div class="dot placeholder"></div>
-                </div>
-              </div>
-              <!-- End GBC Specific UI -->
-
-              <div class="gamepad-body">
-                <div class="power-light primary"></div>
-                <div class="power-light secondary"></div>
-                <div class="pad-container power-container">
-                  <button
-                    id="console-power-btn"
-                    class="console-power-btn power-button"
-                    type="button"
-                    aria-label="Boton de encendido"
-                  ></button>
-                </div>
-
-                <div class="controls physical-controls">
-                  <div class="pad-container dpad-container">
-                    <div class="dpad d-pad cross-box" aria-label="Cruceta">
-                      <button type="button" class="hardware-btn top-cross up" data-button="up"><span>&#9650;</span><span class="verti-line verti-top"></span></button>
-                      <button type="button" class="hardware-btn left-cross left" data-button="left"><span>&#9664;</span><span class="horiz-line horiz-left"></span></button>
-                      <button type="button" class="hardware-btn center" disabled aria-hidden="true"></button>
-                      <button type="button" class="hardware-btn right-cross right" data-button="right"><span>&#9654;</span><span class="horiz-line horiz-right"></span></button>
-                      <button type="button" class="hardware-btn bot-cross down" data-button="down"><span>&#9660;</span><span class="verti-line verti-bot"></span></button>
-                    </div>
-                  </div>
-
-                  <div class="pad-container buttons-container">
-                    <div class="a-b face-buttons ds-face-buttons">
-                      <button type="button" class="round-btn x-btn" data-button="x">X</button>
-                      <button type="button" class="round-btn y-btn" data-button="y">Y</button>
-                      <button type="button" class="round-btn b-btn" data-button="b">B</button>
-                      <button type="button" class="round-btn a-btn" data-button="a">A</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="ds-bottom-screen-shell" aria-hidden="true">
-                  <div class="screen-outer">
-                    <div class="screen-inner">
-                      <canvas id="ds-bottom-screen" width="256" height="192" aria-label="Pantalla inferior Nintendo DS"></canvas>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="meta-row start-select">
-                  <div class="pad-container select-container">
-                    <button type="button" class="pill-btn select select-button" data-button="select" data-label="SELECT">Select</button>
-                  </div>
-                  <div class="pad-container start-container">
-                    <button type="button" class="pill-btn start start-button" data-button="start" data-label="START">Start</button>
-                  </div>
-                  <div class="select-label">SELECT</div>
-                  <div class="select-label shadow">SELECT</div>
-                  <div class="start-label">START</div>
-                  <div class="start-label shadow">START</div>
-                </div>
-
-                <div class="speaker hardware-strip speaker-holder" aria-hidden="true">
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot large-dot"></span>
-                  <span class="dot large-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot large-dot"></span>
-                  <span class="dot large-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                  <span class="dot small-dot"></span>
-                </div>
-              </div>
-            </div>
+            <div id="console-shell-host" class="console-shell-host" aria-live="polite"></div>
 
             <div class="console-dock">
               <button id="toggle-menu-btn" type="button">Overlay</button>
@@ -321,10 +69,10 @@
             <div class="touch-controls" id="touch-controls" aria-label="Controles tactiles">
               <div class="touch-side touch-left">
                 <div class="touch-dpad">
-                  <button type="button" class="touch-btn touch-up" data-button="up">▲</button>
-                  <button type="button" class="touch-btn touch-left-btn" data-button="left">◀</button>
-                  <button type="button" class="touch-btn touch-right-btn" data-button="right">▶</button>
-                  <button type="button" class="touch-btn touch-down" data-button="down">▼</button>
+                  <button type="button" class="touch-btn touch-up" data-button="up">?</button>
+                  <button type="button" class="touch-btn touch-left-btn" data-button="left">?</button>
+                  <button type="button" class="touch-btn touch-right-btn" data-button="right">?</button>
+                  <button type="button" class="touch-btn touch-down" data-button="down">?</button>
                 </div>
               </div>
               <div class="touch-middle">
@@ -576,6 +324,6 @@
     <script src="./vendor/gba-js/js/gba.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
-    <script src="./src/app.js?v=20260313-page-system-fix"></script>
+    <script src="./src/app.js?v=20260317-gba-screenfix"></script>
   </body>
 </html>

@@ -1,4 +1,11 @@
 /* Pega aqui tu CSS del mockup DS */
+#app-compat {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
 body{
 }
 div.container {

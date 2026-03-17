@@ -38,69 +38,387 @@ const defaultPrefs = {
   keyBindings: defaultKeyBindings,
 };
 
-const elements = {
-  body: document.body,
-  canvas: document.querySelector("#screen"),
-  dsTopCanvas: document.querySelector("#ds-top-screen"),
-  dsBottomCanvas: document.querySelector("#ds-bottom-screen"),
-  dsScreens: document.querySelector("#ds-screens"),
-  screenWrap: document.querySelector("#screen-wrap"),
-  screenHint: document.querySelector("#screen-hint"),
-  romInput: document.querySelector("#rom-input"),
-  saveFileInput: document.querySelector("#save-file-input"),
-  statusLine: document.querySelector("#status-line"),
-  stateOutput: document.querySelector("#state-output"),
-  menuOverlay: document.querySelector("#menu-overlay"),
-  toggleMenuBtn: document.querySelector("#toggle-menu-btn"),
-  drawerOverlayBtn: document.querySelector("#drawer-overlay-btn"),
-  drawerToggleBtn: document.querySelector("#drawer-toggle-btn"),
-  drawerCloseBtn: document.querySelector("#drawer-close-btn"),
-  drawerBackdrop: document.querySelector("#drawer-backdrop"),
-  drawer: document.querySelector("#control-drawer"),
-  quickMenuBtn: document.querySelector("#quick-menu-btn"),
-  powerBtn: document.querySelector("#power-btn"),
-  fullscreenBtn: document.querySelector("#fullscreen-btn"),
-  speedBtn: document.querySelector("#speed-btn"),
-  consolePowerBtn: document.querySelector("#console-power-btn"),
-  importSaveBtn: document.querySelector("#import-save-btn"),
-  exportSaveBtn: document.querySelector("#export-save-btn"),
-  drawerImportSaveBtn: document.querySelector("#drawer-import-save-btn"),
-  drawerExportSaveBtn: document.querySelector("#drawer-export-save-btn"),
-  resetFilterBtn: document.querySelector("#reset-filter-btn"),
-  overlayContext: document.querySelector("#overlay-context"),
-  overlayAutoFollow: document.querySelector("#overlay-auto-follow"),
-  overlayOpacity: document.querySelector("#overlay-opacity"),
-  volumeRange: document.querySelector("#volume-range"),
-  scanlinesToggle: document.querySelector("#scanlines-toggle"),
-  startWithButtonToggle: document.querySelector("#start-with-button-toggle"),
-  filterSelect: document.querySelector("#filter-select"),
-  filterIntensity: document.querySelector("#filter-intensity"),
-  touchControlsToggle: document.querySelector("#touch-controls-toggle"),
-  themeSelect: document.querySelector("#theme-select"),
-  restoreDefaultsBtn: document.querySelector("#restore-defaults-btn"),
-  resetKeymapBtn: document.querySelector("#reset-keymap-btn"),
-  contextBadge: document.querySelector("#context-badge"),
-  overlaySummary: document.querySelector("#overlay-summary"),
-  brandChip: document.querySelector("#brand-chip"),
-  systemChip: document.querySelector("#system-chip"),
-  saveModeChip: document.querySelector("#save-mode-chip"),
-  systemBadge: document.querySelector("#system-badge"),
-  systemDescription: document.querySelector("#system-description"),
-  systemToggleButtons: [...document.querySelectorAll("[data-system-toggle]")],
-  controlProfile: document.querySelector("#control-profile"),
-  controlHint: document.querySelector("#control-hint"),
-  saveProfile: document.querySelector("#save-profile"),
-  saveHint: document.querySelector("#save-hint"),
-  cheatForm: document.querySelector("#cheat-form"),
-  cheatAddress: document.querySelector("#cheat-address"),
-  cheatValue: document.querySelector("#cheat-value"),
-  cheatLabel: document.querySelector("#cheat-label"),
-  cheatList: document.querySelector("#cheat-list"),
-  cheatCountBadge: document.querySelector("#cheat-count-badge"),
-  attackInputs: [...document.querySelectorAll("[data-attack-index]")],
-  hardwareButtons: [...document.querySelectorAll("[data-button]")],
-  keymapButtons: [...document.querySelectorAll("[data-keymap-action]")],
+const elements = {};
+
+const gbcSpeakerDots = `
+  <div class="dot placeholder"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot placeholder"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+  <div class="dot open"></div>
+  <div class="dot closed"></div>
+`;
+
+const gbaSpeakerDots = `
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot large-dot"></div>
+  <div class="dot large-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot large-dot"></div>
+  <div class="dot large-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+  <div class="dot small-dot"></div>
+`;
+
+const shellTemplates = {
+  gbc: `
+    <div class="console-shell system-shell--gbc">
+      <div class="gameboy" id="GameBoy">
+        <div class="screen-area">
+          <div class="power">
+            <div class="indicator">
+              <div class="led"></div>
+              <span class="arc" style="z-index:2"></span>
+              <span class="arc" style="z-index:1"></span>
+              <span class="arc" style="z-index:0"></span>
+            </div>
+            POWER
+          </div>
+
+          <div id="screen-wrap" class="screen-wrap">
+            <canvas class="display" id="screen" width="160" height="144" aria-label="Pantalla Game Boy"></canvas>
+            <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+            <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+          </div>
+
+          <div class="label">
+            <div class="title">GAME BOY</div>
+            <div class="subtitle">
+              <span class="c">C</span><span class="o1">O</span><span class="l">L</span><span class="o2">O</span><span class="r">R</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nintendo" id="console-emblem">Nintendo</div>
+        <div id="screen-marquee" hidden>GAME BOY COLOR</div>
+
+        <div class="controls">
+          <div class="dpad">
+            <div class="up" data-button="up"><i class="fa fa-caret-up"></i></div>
+            <div class="right" data-button="right"><i class="fa fa-caret-right"></i></div>
+            <div class="down" data-button="down"><i class="fa fa-caret-down"></i></div>
+            <div class="left" data-button="left"><i class="fa fa-caret-left"></i></div>
+            <div class="middle"></div>
+          </div>
+          <div class="a-b">
+            <div class="b" data-button="b">B</div>
+            <div class="a" data-button="a">A</div>
+          </div>
+        </div>
+
+        <div class="start-select">
+          <div class="select" data-button="select">SELECT</div>
+          <div class="start" data-button="start">START</div>
+        </div>
+
+        <div class="speaker">
+          ${gbcSpeakerDots}
+        </div>
+      </div>
+
+      <div class="app-compat-placeholder" aria-hidden="true">
+        <div id="ds-screens"></div>
+        <canvas id="ds-top-screen" width="256" height="192"></canvas>
+        <canvas id="ds-bottom-screen" width="256" height="192"></canvas>
+        <button id="console-power-btn" type="button"></button>
+      </div>
+    </div>
+  `,
+  gba: `
+    <div class="console-shell system-shell--gba">
+      <div class="system-container" id="gbasp">
+        <div class="screen-body">
+          <div class="screen-bumper" id="bumper-ul"></div>
+          <div class="screen-bumper" id="bumper-ur"></div>
+          <div class="screen-bumper small-bumper" id="bumper-tm"></div>
+          <div class="screen-bumper small-bumper" id="bumper-ll"></div>
+          <div class="screen-bumper small-bumper" id="bumper-lr"></div>
+          <div class="screen-border">
+            <div class="screen">
+              <div id="screen-wrap" class="screen-wrap">
+                <canvas id="screen" width="240" height="160" aria-label="Pantalla Game Boy Advance"></canvas>
+                <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+                <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+              </div>
+            </div>
+            <img src="./assets/gba-sp-logo.svg" alt="Game Boy Advance SP" />
+          </div>
+        </div>
+
+        <div class="swivel"></div>
+        <div id="console-emblem" hidden>Nintendo</div>
+        <div id="screen-marquee" hidden>GAME BOY ADVANCE</div>
+
+        <div class="gamepad-body">
+          <div class="power-light"></div>
+          <div class="power-light"></div>
+
+          <div class="pad-container dpad-container">
+            <div class="d-pad">
+              <button type="button" class="d-up" data-button="up" aria-label="Arriba"></button>
+              <button type="button" class="d-right" data-button="right" aria-label="Derecha"></button>
+              <button type="button" class="d-down" data-button="down" aria-label="Abajo"></button>
+              <button type="button" class="d-left" data-button="left" aria-label="Izquierda"></button>
+            </div>
+          </div>
+
+          <div class="pad-container buttons-container">
+            <button type="button" class="b-button" data-button="b"><span class="letter">B</span></button>
+            <button type="button" class="a-button" data-button="a"><span class="letter">A</span></button>
+          </div>
+
+          <div class="pad-container power-container">
+            <button id="console-power-btn" type="button" class="b-button power-button" aria-label="Power"></button>
+          </div>
+
+          <div class="speaker-holder">
+            ${gbaSpeakerDots}
+          </div>
+
+          <div class="pad-container select-container">
+            <button type="button" class="a-button select-button" data-button="select"></button>
+          </div>
+
+          <div class="pad-container start-container">
+            <button type="button" class="a-button start-button" data-button="start"></button>
+          </div>
+
+          <div class="select-label">SELECT</div>
+          <div class="select-label shadow">SELECT</div>
+          <div class="start-label">START</div>
+          <div class="start-label shadow">START</div>
+        </div>
+      </div>
+
+      <div class="app-compat-placeholder" aria-hidden="true">
+        <div id="ds-screens"></div>
+        <canvas id="ds-top-screen" width="256" height="192"></canvas>
+        <canvas id="ds-bottom-screen" width="256" height="192"></canvas>
+      </div>
+    </div>
+  `,
+  ds: `
+    <div class="console-shell system-shell--ds">
+      <div class="container">
+        <div class="topbody">
+          <div class="inner-topbody">
+            <div class="dark-inner-top">
+              <div class="circle-box-left">
+                <table class="circles">
+                  <tr>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                  </tr>
+                  <tr>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                  </tr>
+                </table>
+              </div>
+              <div class="circle-box-right">
+                <table class="circles">
+                  <tr>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                  </tr>
+                  <tr>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                    <td><div class="mini-circle"></div></td>
+                  </tr>
+                </table>
+              </div>
+              <div class="screen-outer">
+                <div class="screen-inner">
+                  <canvas id="ds-top-screen" width="256" height="192" aria-label="Pantalla superior Nintendo DS"></canvas>
+                </div>
+              </div>
+              <div class="black-square blk-top-left"></div>
+              <div class="black-square blk-top-right"></div>
+              <div class="black-square blk-bot-left"></div>
+              <div class="black-square blk-bot-right"></div>
+            </div>
+          </div>
+        </div>
+        <div class="midbar">
+          <div class="midbar-line left-line"></div>
+          <div class="midbar-line right-line"></div>
+          <div class="battery-light battery-left"></div>
+          <div class="battery-light battery-right"></div>
+          <div class="mic-hole"></div>
+          <p class="mic-text">mic</p>
+        </div>
+        <div class="botbody">
+          <div class="dark-inner-bot">
+            <div class="screen-outer">
+              <div class="screen-inner">
+                <canvas id="ds-bottom-screen" width="256" height="192" aria-label="Pantalla inferior Nintendo DS"></canvas>
+              </div>
+            </div>
+            <div class="buttons-box">
+              <table>
+                <tr>
+                  <td></td>
+                  <td><button type="button" class="game-button" data-button="x">X</button></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><button type="button" class="game-button" data-button="y">Y</button></td>
+                  <td></td>
+                  <td><button type="button" class="game-button" data-button="a">A</button></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td><button type="button" class="game-button" data-button="b">B</button></td>
+                  <td></td>
+                </tr>
+              </table>
+            </div>
+            <div class="set-button-box">
+              <ul>
+                <li>
+                  <button type="button" class="set-button" data-button="start"></button>
+                  <div class="set-text">Start</div>
+                </li>
+                <li>
+                  <button type="button" class="set-button" data-button="select"></button>
+                  <div class="set-text">Select</div>
+                </li>
+              </ul>
+            </div>
+            <div class="cross-box">
+              <button type="button" class="top-cross" data-button="up"><div class="verti-line verti-top"></div></button>
+              <button type="button" class="bot-cross" data-button="down"><div class="verti-line verti-bot"></div></button>
+              <button type="button" class="left-cross" data-button="left"><div class="horiz-line horiz-left"></div></button>
+              <button type="button" class="right-cross" data-button="right"><div class="horiz-line horiz-right"></div></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-compat-placeholder" aria-hidden="true">
+        <div id="screen-wrap" class="screen-wrap">
+          <canvas id="screen" width="160" height="144"></canvas>
+          <div id="ds-screens"></div>
+          <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+          <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+        </div>
+        <button id="console-power-btn" type="button"></button>
+        <div id="console-emblem">Nintendo</div>
+        <div id="screen-marquee">NINTENDO DS</div>
+      </div>
+    </div>
+  `,
 };
+
+function renderSystemShell(system = "gbc") {
+  const shellHost = document.querySelector("#console-shell-host");
+  if (!shellHost) return;
+  shellHost.innerHTML = shellTemplates[system] || shellTemplates.gbc;
+}
+
+function refreshElements() {
+  elements.body = document.body;
+  elements.canvas = document.querySelector("#screen");
+  elements.dsTopCanvas = document.querySelector("#ds-top-screen");
+  elements.dsBottomCanvas = document.querySelector("#ds-bottom-screen");
+  elements.dsScreens = document.querySelector("#ds-screens");
+  elements.screenWrap = document.querySelector("#screen-wrap");
+  elements.screenHint = document.querySelector("#screen-hint");
+  elements.romInput = document.querySelector("#rom-input");
+  elements.saveFileInput = document.querySelector("#save-file-input");
+  elements.statusLine = document.querySelector("#status-line");
+  elements.stateOutput = document.querySelector("#state-output");
+  elements.menuOverlay = document.querySelector("#menu-overlay");
+  elements.toggleMenuBtn = document.querySelector("#toggle-menu-btn");
+  elements.drawerOverlayBtn = document.querySelector("#drawer-overlay-btn");
+  elements.drawerToggleBtn = document.querySelector("#drawer-toggle-btn");
+  elements.drawerCloseBtn = document.querySelector("#drawer-close-btn");
+  elements.drawerBackdrop = document.querySelector("#drawer-backdrop");
+  elements.drawer = document.querySelector("#control-drawer");
+  elements.quickMenuBtn = document.querySelector("#quick-menu-btn");
+  elements.powerBtn = document.querySelector("#power-btn");
+  elements.fullscreenBtn = document.querySelector("#fullscreen-btn");
+  elements.speedBtn = document.querySelector("#speed-btn");
+  elements.consolePowerBtn = document.querySelector("#console-power-btn");
+  elements.importSaveBtn = document.querySelector("#import-save-btn");
+  elements.exportSaveBtn = document.querySelector("#export-save-btn");
+  elements.drawerImportSaveBtn = document.querySelector("#drawer-import-save-btn");
+  elements.drawerExportSaveBtn = document.querySelector("#drawer-export-save-btn");
+  elements.resetFilterBtn = document.querySelector("#reset-filter-btn");
+  elements.overlayContext = document.querySelector("#overlay-context");
+  elements.overlayAutoFollow = document.querySelector("#overlay-auto-follow");
+  elements.overlayOpacity = document.querySelector("#overlay-opacity");
+  elements.volumeRange = document.querySelector("#volume-range");
+  elements.scanlinesToggle = document.querySelector("#scanlines-toggle");
+  elements.startWithButtonToggle = document.querySelector("#start-with-button-toggle");
+  elements.filterSelect = document.querySelector("#filter-select");
+  elements.filterIntensity = document.querySelector("#filter-intensity");
+  elements.touchControlsToggle = document.querySelector("#touch-controls-toggle");
+  elements.themeSelect = document.querySelector("#theme-select");
+  elements.restoreDefaultsBtn = document.querySelector("#restore-defaults-btn");
+  elements.resetKeymapBtn = document.querySelector("#reset-keymap-btn");
+  elements.contextBadge = document.querySelector("#context-badge");
+  elements.overlaySummary = document.querySelector("#overlay-summary");
+  elements.brandChip = document.querySelector("#brand-chip");
+  elements.systemChip = document.querySelector("#system-chip");
+  elements.saveModeChip = document.querySelector("#save-mode-chip");
+  elements.systemBadge = document.querySelector("#system-badge");
+  elements.systemDescription = document.querySelector("#system-description");
+  elements.systemToggleButtons = [...document.querySelectorAll("[data-system-toggle]")];
+  elements.controlProfile = document.querySelector("#control-profile");
+  elements.controlHint = document.querySelector("#control-hint");
+  elements.saveProfile = document.querySelector("#save-profile");
+  elements.saveHint = document.querySelector("#save-hint");
+  elements.cheatForm = document.querySelector("#cheat-form");
+  elements.cheatAddress = document.querySelector("#cheat-address");
+  elements.cheatValue = document.querySelector("#cheat-value");
+  elements.cheatLabel = document.querySelector("#cheat-label");
+  elements.cheatList = document.querySelector("#cheat-list");
+  elements.cheatCountBadge = document.querySelector("#cheat-count-badge");
+  elements.attackInputs = [...document.querySelectorAll("[data-attack-index]")];
+  elements.hardwareButtons = [...document.querySelectorAll("[data-button]")];
+  elements.keymapButtons = [...document.querySelectorAll("[data-keymap-action]")];
+}
+
+refreshElements();
 
 function getInitialSystemFromPage() {
   const pageSystem = (elements.body?.dataset?.system || "").toLowerCase();
@@ -298,6 +616,8 @@ function parseCheat(addressRaw, valueRaw, labelRaw) {
 }
 
 function setCurrentSystem(system) {
+  const shouldRenderShell = uiState.currentSystem !== system
+    || !document.querySelector(`#console-shell-host .system-shell--${system}`);
   if (uiState.currentSystem !== system) {
     elements.body.classList.add("system-switching");
     window.setTimeout(() => {
@@ -306,22 +626,46 @@ function setCurrentSystem(system) {
   }
   uiState.currentSystem = system;
   elements.body.dataset.system = system;
+  if (shouldRenderShell) {
+    renderSystemShell(system);
+    refreshElements();
+    bindDynamicElements();
+  }
   syncCanvasResolution(system);
+  if (gbaCore && elements.canvas) {
+    gbaCore.setCanvas(elements.canvas);
+  }
+}
+
+function ensureShellElements(system = uiState.currentSystem) {
+  const missingShellCanvas = system === "ds"
+    ? !elements.dsTopCanvas || !elements.dsBottomCanvas
+    : !elements.canvas;
+
+  if (!missingShellCanvas) return;
+
+  renderSystemShell(system);
+  refreshElements();
+  bindDynamicElements();
 }
 
 function syncCanvasResolution(system = uiState.currentSystem) {
+  ensureShellElements(system);
   if (system === "gba") {
+    if (!elements.canvas) return;
     elements.canvas.width = 240;
     elements.canvas.height = 160;
     return;
   }
   if (system === "ds") {
+    if (!elements.dsTopCanvas || !elements.dsBottomCanvas) return;
     elements.dsTopCanvas.width = 256;
     elements.dsTopCanvas.height = 192;
     elements.dsBottomCanvas.width = 256;
     elements.dsBottomCanvas.height = 192;
     return;
   }
+  if (!elements.canvas) return;
   elements.canvas.width = 160;
   elements.canvas.height = 144;
 }
@@ -1059,10 +1403,10 @@ function ensureDsRuntime() {
 }
 
 async function loadGbcRom(file) {
+  setCurrentSystem("gbc");
   const buffer = await file.arrayBuffer();
   const binary = binaryStringFromArrayBuffer(buffer);
   window.start(elements.canvas, binary);
-  setCurrentSystem("gbc");
   uiState.loadedRom = {
     name: file.name,
     size: buffer.byteLength,
@@ -1082,14 +1426,13 @@ async function loadGbcRom(file) {
 }
 
 async function loadGbaRom(file) {
+  setCurrentSystem("gba");
   const core = await ensureGbaCore();
   const buffer = await file.arrayBuffer();
   const result = core.setRom(buffer);
   if (!result) {
     throw new Error("No se pudo iniciar la ROM GBA.");
   }
-
-  setCurrentSystem("gba");
   uiState.loadedRom = {
     name: file.name,
     size: buffer.byteLength,
@@ -1110,6 +1453,7 @@ async function loadGbaRom(file) {
 }
 
 async function loadDsRom(file) {
+  setCurrentSystem("ds");
   const ds = await ensureDsRuntime();
   const romData = new Uint8Array(await file.arrayBuffer());
 
@@ -1134,8 +1478,6 @@ async function loadDsRom(file) {
     });
     ds.storage.prepareVirtualFilesystem();
   });
-
-  setCurrentSystem("ds");
   uiState.loadedRom = {
     name: file.name,
     size: romData.byteLength,
@@ -1367,23 +1709,75 @@ window.advanceTime = function (ms) {
 
 function bindInputButton(buttonElement) {
   const button = buttonElement.dataset.button;
-  buttonElement.addEventListener("pointerdown", (event) => {
+  const triggerInput = (event) => {
     event.preventDefault();
+    const now = performance.now();
+    if (buttonElement.__inputGuardUntil && buttonElement.__inputGuardUntil > now) {
+      return;
+    }
+    buttonElement.__inputGuardUntil = now + 120;
     buttonElement.classList.add("is-pressed");
     window.setTimeout(() => {
       buttonElement.classList.remove("is-pressed");
     }, 120);
     holdButton(button, 85);
     afterInput(button);
+  };
+
+  buttonElement.addEventListener("pointerdown", triggerInput);
+  buttonElement.addEventListener("click", triggerInput);
+}
+
+function bindDynamicElements() {
+  if (elements.menuOverlay && !elements.menuOverlay.dataset.bound) {
+    elements.menuOverlay.dataset.bound = "true";
+    elements.menuOverlay.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-overlay-sequence]");
+      if (!target) return;
+
+      const sequence = JSON.parse(target.dataset.overlaySequence || "[]");
+      const nextContext = target.dataset.nextContext || uiState.overlayContext;
+      if (sequence.length > 0) {
+        tapSequence(sequence, nextContext);
+        const label = target.firstChild && target.firstChild.textContent
+          ? target.firstChild.textContent.trim()
+          : target.textContent.trim().replace(/\s+/g, " ");
+        afterInput(`overlay:${label}`);
+      } else {
+        setOverlayContext(nextContext);
+        persistAndRender();
+        afterInput(`overlay-context:${nextContext}`);
+      }
+    });
+  }
+
+  if (elements.consolePowerBtn && !elements.consolePowerBtn.dataset.bound) {
+    elements.consolePowerBtn.dataset.bound = "true";
+    elements.consolePowerBtn.addEventListener("click", () => {
+      elements.consolePowerBtn.classList.add("is-pressed");
+      window.setTimeout(() => {
+        elements.consolePowerBtn.classList.remove("is-pressed");
+      }, 140);
+      togglePowerState();
+    });
+  }
+
+  elements.hardwareButtons.forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "true";
+    bindInputButton(button);
   });
 }
 
 loadPrefs();
+renderSystemShell(uiState.currentSystem);
+refreshElements();
 syncCanvasResolution(uiState.currentSystem);
 syncFormState();
 applyVisualPrefs();
 renderStatePanel();
 updateStatus();
+bindDynamicElements();
 
 elements.systemToggleButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -1474,25 +1868,6 @@ document.addEventListener("keyup", (event) => {
   renderStatePanel();
 });
 
-elements.menuOverlay.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-overlay-sequence]");
-  if (!target) return;
-
-  const sequence = JSON.parse(target.dataset.overlaySequence || "[]");
-  const nextContext = target.dataset.nextContext || uiState.overlayContext;
-  if (sequence.length > 0) {
-    tapSequence(sequence, nextContext);
-    const label = target.firstChild && target.firstChild.textContent
-      ? target.firstChild.textContent.trim()
-      : target.textContent.trim().replace(/\s+/g, " ");
-    afterInput(`overlay:${label}`);
-  } else {
-    setOverlayContext(nextContext);
-    persistAndRender();
-    afterInput(`overlay-context:${nextContext}`);
-  }
-});
-
 document.addEventListener("click", (event) => {
   const saveSlot = event.target.closest("[data-save-slot]");
   if (saveSlot) {
@@ -1548,14 +1923,6 @@ elements.drawerBackdrop.addEventListener("click", () => {
 });
 
 elements.powerBtn.addEventListener("click", () => {
-  togglePowerState();
-});
-
-elements.consolePowerBtn.addEventListener("click", () => {
-  elements.consolePowerBtn.classList.add("is-pressed");
-  window.setTimeout(() => {
-    elements.consolePowerBtn.classList.remove("is-pressed");
-  }, 140);
   togglePowerState();
 });
 
@@ -1677,8 +2044,6 @@ elements.resetKeymapBtn.addEventListener("click", () => {
 });
 
 elements.cheatForm.addEventListener("submit", addCheat);
-elements.hardwareButtons.forEach(bindInputButton);
-
 window.setInterval(() => {
   applyCheats();
   renderStatePanel();

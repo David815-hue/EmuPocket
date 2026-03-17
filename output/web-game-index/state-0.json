@@ -1,0 +1,36 @@
+{
+  "system": "gbc",
+  "mode": "idle",
+  "origin": {
+    "x": 0,
+    "y": 0,
+    "note": "origen superior izquierdo, y crece hacia abajo"
+  },
+  "rom": null,
+  "startFlow": {
+    "enabled": true,
+    "awaitingStart": false
+  },
+  "visual": {
+    "filterMode": "lcd",
+    "filterIntensity": 55,
+    "touchControls": true
+  },
+  "overlay": {
+    "visible": false,
+    "context": "battle-root",
+    "autoFollow": true,
+    "opacity": 92,
+    "attacks": [
+      "Thunderbolt",
+      "Quick Attack",
+      "Tail Whip",
+      "Thunder Wave"
+    ]
+  },
+  "cheats": [],
+  "lastInput": "open_menu",
+  "speed": 1,
+  "volume": 100,
+  "core": null
+}

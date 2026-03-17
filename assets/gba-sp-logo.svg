@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" role="img" aria-labelledby="title">
+  <title>Game Boy Advance SP</title>
+  <defs>
+    <linearGradient id="main" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3f3f8" />
+      <stop offset="100%" stop-color="#b0b4c6" />
+    </linearGradient>
+  </defs>
+  <g fill="url(#main)">
+    <path d="M16 55c0-18 11-30 28-30 13 0 21 6 25 15l-14 5c-2-5-6-8-11-8-8 0-14 7-14 18s6 18 15 18c6 0 10-3 12-9H41V52h30v28H58l-1-6c-4 4-10 7-18 7C27 81 16 72 16 55Z"/>
+    <path d="M87 26h14v53H87z"/>
+    <path d="M111 79V26h24c16 0 26 9 26 23s-10 24-26 24h-10v6Zm14-18h9c8 0 13-4 13-12s-5-11-13-11h-9Z"/>
+    <path d="M170 79V26h14l24 30V26h14v53h-13l-25-31v31Z"/>
+    <path d="M233 79l21-53h16l21 53h-15l-4-11h-21l-4 11Zm22-22h13l-6-18Z"/>
+    <path d="M301 79V26h14v41h27v12Z"/>
+    <path d="M16 16h43v6H16z"/>
+    <path d="M80 16h29v6H80z"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" font-size="27" font-style="italic" font-weight="700" letter-spacing="3">
+    <text x="14" y="28" fill="#f5f5fa">GAME BOY ADVANCE</text>
+    <text x="309" y="55" fill="#d6dae8" font-size="31">SP</text>
+  </g>
+</svg>

@@ -1,6 +1,14 @@
 @import url("./styles.css");
 
 /* Community mockup adapter for current GBA DOM (valid CSS only) */
+#app-compat {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 /* Adjust this to change the size of the whole pen */
 html {
   font-size: 2vw;

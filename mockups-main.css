@@ -1,0 +1,1689 @@
+/* Index shell host */
+.console-shell-host {
+  position: relative;
+  min-height: min(920px, calc(100vh - 260px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 32%),
+    linear-gradient(180deg, rgba(15, 20, 24, 0.06), rgba(15, 20, 24, 0.14));
+}
+
+.console-shell {
+  position: relative;
+  width: 100%;
+  min-height: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.console-shell .app-compat-placeholder {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.console-shell button,
+.console-shell [data-button] {
+  font: inherit;
+}
+
+.console-shell button {
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.console-shell button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.console-shell .screen-wrap {
+  position: relative;
+}
+
+.console-shell .screen-wrap canvas {
+  display: block;
+}
+
+.console-shell .screen-hint,
+.console-shell .menu-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.console-shell .screen-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+}
+
+/* Scoped GBC mockup */
+.console-shell.system-shell--gbc .app-compat-placeholder {
+position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.console-shell.system-shell--gbc .gameboy {
+position: relative;
+  width: 350px;
+  height: 570px;
+  border-radius: 20px;
+  padding: 20px;
+  background-color: #4f50db;
+  box-shadow: 0px -5px 0px #0d0e51, 0px 5px 0px #3d38b5;
+  font-family: sans-serif;
+  -webkit-user-select: none;
+  cursor: default;
+}
+.console-shell.system-shell--gbc .gameboy::after {
+content: "";
+  display: block;
+  position: absolute;
+  top: calc(100% - 34px);
+  left: 5px;
+  width: calc(100% - 10px);
+  height: 50px;
+  border-radius: 50%;
+  background-color: #4f50db;
+  box-shadow: 0px 5px 0px #3d38b5;
+  border-bottom: 2px solid #9998eb;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area {
+position: relative;
+  padding: 35px 50px 5px 50px;
+  border-radius: 15px 15px 15px 15px;
+  background-color: #23252d;
+  color: #67879a;
+  box-shadow: 0px 2px 0px black, 0px -2px 0px black, -2px 0px 0px black, 2px 0px 0px black;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area::after {
+content: "";
+  display: block;
+  position: absolute;
+  top: calc(100% - 20px);
+  left: 5px;
+  width: calc(100% - 10px);
+  height: 30px;
+  border-radius: 50%;
+  background-color: #23252d;
+  box-shadow: 0px 2px 0px black;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power {
+position: absolute;
+  display: block;
+  width: 50px;
+  left: 0px;
+  top: 80px;
+  font-size: 10px;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power .indicator {
+line-height: 14px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power .indicator .led {
+position: relative;
+  display: inline-block;
+  background-color: #ca1a21;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0px 0px 10px #ff552e;
+  z-index: 5;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power .indicator .arc {
+position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: -2px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power .indicator .arc::before {
+position: absolute;
+  left: 3px;
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #67879a;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .power .indicator .arc::after {
+position: absolute;
+  left: 0px;
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #23252d;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .display {
+background-color: #929d97;
+  height: 190px;
+  width: 210px;
+  border-radius: 3px;
+  margin-bottom: 15px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label {
+position: relative;
+  text-align: center;
+  font-size: 20px;
+  z-index: 5;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .title {
+display: inline;
+  font-weight: bold;
+  font-style: italic;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle {
+display: inline;
+  font-family: "Comic Sans MS";
+  font-weight: bold;
+  font-size: 22px;
+  letter-spacing: -1px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .c,
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .o1,
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .l,
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .o2,
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .r {
+display: inline-block;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .c {
+color: #aa2058;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .o1 {
+color: #605bd9;
+  font-size: 20px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .l {
+color: #78b930;
+  transform: rotateZ(-10deg);
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .o2 {
+color: #b6b524;
+  font-size: 20px;
+}
+.console-shell.system-shell--gbc .gameboy .screen-area .label .subtitle .r {
+color: #317aaf;
+}
+.console-shell.system-shell--gbc .gameboy .nintendo {
+padding: 0px 5px;
+  width: 82px;
+  color: #3436bf;
+  font-weight: bold;
+  text-align: center;
+  margin: 0 auto;
+  border: 2px solid #3436bf;
+  border-radius: 11px;
+  margin-top: 30px;
+  text-shadow: 0px -2px 1px #6b67ed;
+  box-shadow: 0px -2px 1px #6b67ed;
+}
+.console-shell.system-shell--gbc .gameboy .controls {
+display: flex;
+  justify-content: space-between;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad {
+position: relative;
+  display: inline-block;
+  width: 90px;
+  height: 90px;
+  z-index: 5;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad > * {
+width: 33%;
+  height: 33%;
+  position: absolute;
+  background-color: #565e6a;
+  cursor: pointer;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad > * i {
+position: relative;
+  display: block;
+  margin: 0 auto;
+  text-align: center;
+  height: 100%;
+  font-size: 28px;
+  color: #333a4a;
+  text-shadow: 0px -0.5px 0px #aaa;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .up {
+top: calc(0% + 4px);
+  left: 33%;
+  border-top: 4px solid black;
+  border-left: 4px solid black;
+  border-right: 4px solid black;
+  border-radius: 5px 5px 0px 0px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .up:active {
+background: linear-gradient(to top, #565e6a 0%, #333 100%);
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .up i {
+top: -5px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .right {
+top: 33%;
+  left: calc(66% - 4px);
+  border-top: 4px solid black;
+  border-bottom: 4px solid black;
+  border-right: 4px solid black;
+  border-radius: 0px 5px 5px 0px;
+  box-shadow: 0px -2px 0px #888 inset;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .right:active {
+background: linear-gradient(to right, #565e6a 0%, #333 100%);
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .right i {
+top: -5px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .down {
+top: calc(66% - 4px);
+  left: 33%;
+  border-left: 4px solid black;
+  border-bottom: 4px solid black;
+  border-right: 4px solid black;
+  border-radius: 0px 0px 5px 5px;
+  box-shadow: 0px -2px 0px #888 inset;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .down:active {
+background: linear-gradient(to bottom, #565e6a 0%, #333 100%);
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .left {
+top: 33%;
+  left: calc(0% + 4px);
+  border-top: 4px solid black;
+  border-bottom: 4px solid black;
+  border-left: 4px solid black;
+  border-radius: 5px 0px 0px 5px;
+  box-shadow: 0px -2px 0px #888 inset;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .left i {
+top: -5px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .left:active {
+background: linear-gradient(to left, #565e6a 0%, #333 100%);
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .middle {
+top: 33%;
+  left: 33%;
+  z-index: -5;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .middle::after {
+content: "";
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  display: inline-block;
+  border: 1px solid #6e737a;
+  background: linear-gradient(to bottom, #6d7075 0%, #6d7075 30%, #23272f 70%, #23272f 100%);
+  border-radius: 50%;
+  height: 60%;
+  width: 60%;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .up-down {
+background-color: #565e6a;
+  border: 4px solid black;
+  border-radius: 5px;
+  width: 20px;
+  height: 60px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .dpad .left-right {
+background-color: #565e6a;
+  border: 4px solid black;
+  border-radius: 5px;
+  width: 60px;
+  height: 20px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .a-b {
+position: relative;
+  display: inline-block;
+  width: 120px;
+  height: 90px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .a-b .a,
+.console-shell.system-shell--gbc .gameboy .controls .a-b .b {
+position: absolute;
+  display: inline-block;
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 50%;
+  background-color: #2c313e;
+  border-bottom: 2px solid #888;
+  box-shadow: -1px 1px 5px black, 0px 0px 5px black inset;
+  text-shadow: 0px -1px 1px #888;
+  color: #2c313e;
+  text-align: center;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transition: box-shadow 0.1s ease-out, border 0.1s ease-out, line-height 0.2s ease-out;
+}
+.console-shell.system-shell--gbc .gameboy .controls .a-b .a:active,
+.console-shell.system-shell--gbc .gameboy .controls .a-b .b:active {
+box-shadow: -1px 1px 1px black, 0px 0px 5px black inset;
+  border-width: 0px;
+  line-height: 45px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .a-b .a {
+top: 15px;
+  right: 10px;
+}
+.console-shell.system-shell--gbc .gameboy .controls .a-b .b {
+top: 35px;
+  left: 0%;
+}
+.console-shell.system-shell--gbc .gameboy .start-select {
+width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+}
+.console-shell.system-shell--gbc .gameboy .start-select .select,
+.console-shell.system-shell--gbc .gameboy .start-select .start {
+display: inline-block;
+  color: #6b67ed;
+  text-shadow: 0px -1px 0px #3436bf;
+  letter-spacing: -1px;
+  width: 60px;
+  font-size: 16px;
+  text-align: center;
+  margin-top: 60px;
+}
+.console-shell.system-shell--gbc .gameboy .start-select .select::before,
+.console-shell.system-shell--gbc .gameboy .start-select .start::before {
+content: "";
+  display: block;
+  margin: 0 auto;
+  width: 30px;
+  height: 10px;
+  margin-bottom: 5px;
+  border-radius: 40%;
+  background: linear-gradient(to bottom, #0b0a1c 0%, #0b0a1c 30%, #62636c 70%, #62636c 100%);
+  background-repeat: no-repeat;
+  border: 2px solid #0b0a1c;
+  box-shadow: 0px -2px 1px #8482e9;
+  cursor: pointer;
+}
+.console-shell.system-shell--gbc .gameboy .start-select .select:active::before,
+.console-shell.system-shell--gbc .gameboy .start-select .start:active::before {
+background: linear-gradient(to bottom, #0b0a1c 0%, #0b0a1c 50%, #62636c 100%);
+}
+.console-shell.system-shell--gbc .gameboy .speaker {
+position: absolute;
+  display: flex;
+  width: 75px;
+  height: 75px;
+  right: 15px;
+  bottom: 5px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  z-index: 100;
+  transform: skewY(-10deg);
+}
+.console-shell.system-shell--gbc .gameboy .speaker .dot {
+width: 7px;
+  height: 7px;
+  margin: 1px;
+  border-radius: 50%;
+}
+.console-shell.system-shell--gbc .gameboy .speaker .dot.placeholder {
+background-color: transparent;
+}
+.console-shell.system-shell--gbc .gameboy .speaker .dot.open {
+background-color: #0a0717;
+  box-shadow: 0px 0px 2px #7c7be0 inset;
+}
+.console-shell.system-shell--gbc .gameboy .speaker .dot.closed {
+background: linear-gradient(to bottom, #6664e5 0%, #2d3590 100%);
+  box-shadow: 0px 0px 2px #7c7be0 inset;
+}
+.console-shell.system-shell--gbc * {
+box-sizing: border-box;
+}
+.console-shell.system-shell--gbc,
+.console-shell.system-shell--gbc {
+width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.console-shell.system-shell--gbc {
+padding: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to top, #aaa 0%, white 100%);
+}
+.console-shell.system-shell--gbc .gameboy {
+margin: 0 auto;
+}
+
+ 
+/* Scoped GBA mockup */
+.console-shell.system-shell--gba .app-compat-placeholder {
+position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.console-shell.system-shell--gba {
+font-size: 2vw;
+}
+.console-shell.system-shell--gba {
+margin: 0;
+  padding: 0;
+  background: #ffffff;
+  background: linear-gradient(to bottom, #ffffff 0%, #C9C9C9 100%);
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.console-shell.system-shell--gba .system-container#gbasp {
+width: 40rem;
+  height: 73rem;
+  margin: 2rem auto;
+  z-index: 0;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-body {
+background-color: #2222ff;
+  background: linear-gradient(10deg, #3c3cff, #2222ff, #0000d5);
+  width: 40rem;
+  height: 34rem;
+  border-radius: 2.4rem;
+  position: relative;
+  padding: 2rem;
+  box-sizing: border-box;
+  border: 0.3rem solid #0000d5;
+  border-right-color: #8888ff;
+  border-top-color: #5555ff;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-body:before {
+content: "";
+  width: 18rem;
+  height: 0.8rem;
+  background-color: #2222ff;
+  position: absolute;
+  bottom: -0.8rem;
+  z-index: -1;
+  left: 2rem;
+  border-right: 0.2rem solid #8888ff;
+  box-shadow: inset 0rem 0.6rem 0.5rem 0rem rgba(0, 0, 0, 0.75);
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-body:after {
+content: "";
+  width: 3.2rem;
+  height: 0.8rem;
+  background-color: #2222ff;
+  position: absolute;
+  bottom: -0.8rem;
+  z-index: -1;
+  left: 32rem;
+  border-right: 0.2rem solid #8888ff;
+  box-shadow: inset 0rem 0.6rem 0.5rem 0rem rgba(0, 0, 0, 0.75);
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-border {
+background-color: #333;
+  width: 100%;
+  margin: 1.6rem auto;
+  height: 26.8rem;
+  box-sizing: border-box;
+  border: 0.4rem solid #bbbbff;
+  border-radius: 0.8rem;
+  border-top-color: #0000a2;
+  border-right-color: #0000d5;
+  border-bottom-color: #8888ff;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-border img {
+position: absolute;
+  left: 11.2rem;
+  bottom: 4rem;
+  opacity: 0.7;
+  width: 17.5rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen {
+background-color: #777788;
+  margin: 2rem auto;
+  width: 90%;
+  height: 21rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen iframe {
+width: 100%;
+  height: 21rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .screen-bumper {
+border-radius: 100%;
+  width: 2.2rem;
+  height: 2.2rem;
+  position: absolute;
+  background: radial-gradient(circle at top left, #5555ff, #0000bb);
+  border: 0.2rem solid #0000bb;
+}
+.console-shell.system-shell--gba .system-container#gbasp #bumper-ul {
+left: 1rem;
+  top: 0.6rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp #bumper-ur {
+right: 1rem;
+  top: 0.6rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp #bumper-ll {
+left: 1.2rem;
+  bottom: 0.4rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp #bumper-lr {
+right: 1.2rem;
+  bottom: 0.4rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp #bumper-tm {
+left: calc(50% - 1.0rem);
+  top: 0.8rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .small-bumper {
+width: 1.6rem;
+  height: 1.6rem;
+  background: radial-gradient(circle at bottom left, #2222ff, #0000bb);
+  border-width: 0.1rem;
+  border-left-color: #3c3cff;
+  border-bottom-color: #3c3cff;
+}
+.console-shell.system-shell--gba .system-container#gbasp .swivel {
+width: 100%;
+  border-radius: 1.6rem;
+  height: 4.8rem;
+  background-color: #2222ff;
+  position: relative;
+  top: 0.4rem;
+  box-shadow: inset 0rem -2rem 0.8rem 0rem rgba(0, 0, 0, 0.4);
+  border-top: 0.2rem solid #3c3cff;
+}
+.console-shell.system-shell--gba .system-container#gbasp .swivel:before {
+content: "";
+  width: 18rem;
+  height: 4.5rem;
+  position: absolute;
+  bottom: -2rem;
+  z-index: 1;
+  left: 2.2rem;
+  top: 0rem;
+  border-right: 0.2rem solid #8888ff;
+  border-left: 0.2rem solid #0000a2;
+  border-bottom: 0.3rem solid #000022;
+  box-shadow: inset 0rem 1rem 0.5rem 0rem rgba(255, 255, 255, 0.2);
+}
+.console-shell.system-shell--gba .system-container#gbasp .swivel:after {
+content: "";
+  width: 3.2rem;
+  height: 4.5rem;
+  position: absolute;
+  bottom: -2rem;
+  z-index: 1;
+  left: 32.2rem;
+  top: 0rem;
+  border-right: 0.2rem solid #8888ff;
+  border-left: 0.2rem solid #0000bb;
+  border-bottom: 0.3rem solid #000022;
+  box-shadow: inset 0rem 1rem 0.5rem 0rem rgba(255, 255, 255, 0.2);
+}
+.console-shell.system-shell--gba .system-container#gbasp .gamepad-body {
+background-color: #2222ff;
+  background: linear-gradient(10deg, #3c3cff, #2222ff, #0000d5);
+  width: 40rem;
+  height: 36rem;
+  border-radius: 2.4rem;
+  position: relative;
+  padding: 2rem;
+  box-sizing: border-box;
+  border: 0.3rem solid #0000d5;
+  border-right-color: #8888ff;
+  border-top-color: #5555ff;
+  z-index: -1;
+  top: -2.8rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .pad-container {
+width: 11rem;
+  height: 11rem;
+  border: none;
+  border-radius: 100%;
+  position: absolute;
+  left: 2rem;
+  top: 10rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .pad-container:before {
+content: "";
+  z-index: 0;
+  top: 0.4rem;
+  left: 0.4rem;
+  height: inherit;
+  width: inherit;
+  background: #2222ff;
+  position: absolute;
+  border-radius: inherit;
+}
+.console-shell.system-shell--gba .system-container#gbasp .pad-container:after {
+content: "";
+  position: absolute;
+  z-index: -1;
+  top: -0.4rem;
+  left: -0.4rem;
+  width: inherit;
+  height: inherit;
+  background: linear-gradient(to right, #5555ff, #000088);
+  border-radius: inherit;
+}
+.console-shell.system-shell--gba .system-container#gbasp .dpad-container {
+border: none;
+  background: #2222ff;
+  z-index: 99;
+}
+.console-shell.system-shell--gba .system-container#gbasp .dpad-container:before {
+width: 11.8rem;
+  height: 11.8rem;
+  border-radius: 100%;
+  background: linear-gradient(to right, #5555ff, #000088);
+  content: "";
+  position: absolute;
+  top: -0.4rem;
+  left: -0.4rem;
+  z-index: -1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .dpad-container:after {
+width: 10.2rem;
+  height: 10.2rem;
+  border-radius: 100%;
+  background: #2222ff;
+  content: "";
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: -1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .d-pad {
+width: 2.8rem;
+  height: 8.4rem;
+  background-color: #333;
+  position: relative;
+  margin: 1.2rem auto;
+  box-sizing: border-box;
+  border: 0.2rem solid black;
+  border-top: 0.2rem solid #666666;
+  border-right: 0.2rem solid #666666;
+}
+.console-shell.system-shell--gba .system-container#gbasp .d-pad:before {
+width: 3.1rem;
+  height: 2.8rem;
+  position: absolute;
+  content: "";
+  background-color: #333;
+  left: -3.1rem;
+  top: 2.6rem;
+  border-bottom: 0.2rem solid black;
+  border-left: 0.2rem solid black;
+  border-top: 0.2rem solid #666666;
+  box-sizing: border-box;
+}
+.console-shell.system-shell--gba .system-container#gbasp .d-pad:after {
+width: 3.1rem;
+  height: 2.8rem;
+  position: absolute;
+  content: "";
+  background-color: #333;
+  left: 2.3rem;
+  top: 2.6rem;
+  border-top: 0.2rem solid #666666;
+  border-right: 0.2rem solid #666666;
+  border-bottom: 0.2rem solid black;
+  box-sizing: border-box;
+}
+.console-shell.system-shell--gba .system-container#gbasp .buttons-container {
+width: 12.4rem;
+  height: 5.1rem;
+  border: 0.8rem solid #0000bb;
+  border: none !important;
+  background: yellow;
+  border-radius: 11rem;
+  position: relative;
+  left: 20.8rem;
+  top: 10.4rem;
+  border-top-color: #000088;
+  border-left-color: #5555ff;
+  border-bottom-color: #3c3cff;
+  transform: rotate(-12deg);
+  z-index: 1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .buttons-container:before {
+width: inherit;
+  height: inherit;
+  background: #2222ff;
+  top: 0rem;
+  left: 0rem;
+  position: absolute;
+  content: "";
+  border-radius: 11rem;
+  z-index: 0;
+}
+.console-shell.system-shell--gba .system-container#gbasp .buttons-container:after {
+content: "";
+  position: absolute;
+  left: -0.8rem;
+  top: -0.8rem;
+  border-radius: 11rem;
+  width: 14rem;
+  height: 6.7rem;
+  background: linear-gradient(to right, #5555ff, #000088);
+  z-index: -1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .buttons-container .letter {
+display: block;
+  position: absolute;
+  z-index: 200;
+  top: 0.05em;
+  left: calc(50% - .3em);
+}
+.console-shell.system-shell--gba .system-container#gbasp .b-button,
+.console-shell.system-shell--gba .system-container#gbasp .a-button {
+font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  line-height: 4rem;
+  font-size: 2.2rem;
+  color: #404040;
+  transform: rotate(12deg);
+  text-align: center;
+  width: 4rem;
+  height: 4rem;
+  background-color: #333;
+  border-radius: 100%;
+  position: absolute;
+  left: 0.8rem;
+  top: 0.5rem;
+  box-sizing: border-box;
+  border: none;
+}
+.console-shell.system-shell--gba .system-container#gbasp .b-button:before,
+.console-shell.system-shell--gba .system-container#gbasp .a-button:before {
+width: inherit;
+  height: inherit;
+  border-radius: inherit;
+  content: "";
+  position: absolute;
+  background: yellow;
+  left: 0rem;
+  top: 0rem;
+  background: linear-gradient(to right, #4d4d4d, #262626);
+  z-index: -1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .b-button:after,
+.console-shell.system-shell--gba .system-container#gbasp .a-button:after {
+width: 3.6rem;
+  height: 3.6rem;
+  background: #333;
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 0.2rem;
+  border-radius: inherit;
+  z-index: 0;
+}
+.console-shell.system-shell--gba .system-container#gbasp .a-button {
+left: 7.6rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-container {
+width: 2rem;
+  height: 2rem;
+  position: absolute;
+  left: 18rem;
+  top: 5.2rem;
+  border-width: 0.5rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-container:after {
+width: 3.8rem;
+  height: 3.8rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-container:before {
+left: 0.5rem;
+  top: 0.5rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-button {
+width: 2.1rem;
+  height: 2.1rem;
+  position: absolute;
+  left: calc(50% - 0.5rem);
+  top: calc(50% - 0.5rem);
+  color: #fff;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-button:after {
+width: 1.6rem;
+  height: 1.6rem;
+  left: 0.2rem;
+  top: 0.2rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .speaker-holder {
+width: 8rem;
+  height: 8rem;
+  position: absolute;
+  top: 20rem;
+  left: 15rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.console-shell.system-shell--gba .system-container#gbasp .dot {
+width: 0.3rem;
+  height: 0.3rem;
+  background-color: #000;
+  margin: 0.8rem;
+  border-radius: 100%;
+}
+.console-shell.system-shell--gba .system-container#gbasp .large-dot {
+width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 0.5rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-container,
+.console-shell.system-shell--gba .system-container#gbasp .start-container {
+width: 2.2rem;
+  height: 2.2rem;
+  position: absolute;
+  left: 14.6rem;
+  top: 30rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-container:after,
+.console-shell.system-shell--gba .system-container#gbasp .start-container:after {
+width: 3.8rem;
+  height: 3.8rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .start-container {
+left: 19.8rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-button,
+.console-shell.system-shell--gba .system-container#gbasp .start-button {
+position: absolute;
+  height: 1.8rem;
+  width: 1.8rem;
+  left: calc(50% - 0.45rem);
+  top: calc(50% - 0.45rem);
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-button:after,
+.console-shell.system-shell--gba .system-container#gbasp .start-button:after {
+height: 1.4rem;
+  width: 1.4rem;
+  top: 0.2rem;
+  left: 0.2rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .a-button:active {
+background-color: #999999;
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-label,
+.console-shell.system-shell--gba .system-container#gbasp .start-label {
+position: absolute;
+  font-family: Impact, Charcoal, sans-serif;
+  font-size: 1.2rem;
+  left: 14.8rem;
+  bottom: 5.6rem;
+  color: #0000d5;
+  z-index: 2;
+}
+.console-shell.system-shell--gba .system-container#gbasp .start-label {
+left: 20.2rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .start-label + .start-label {
+left: 20.1rem;
+  bottom: 5.7rem;
+  color: #5555ff;
+  z-index: 1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .select-label + .select-label {
+color: #5555ff;
+  left: 14.7rem;
+  bottom: 5.7rem;
+  z-index: 1;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-light {
+position: absolute;
+  width: 1.4rem;
+  height: 1.2rem;
+  background-color: #333;
+  right: -0.4rem;
+  top: 5rem;
+}
+.console-shell.system-shell--gba .system-container#gbasp .power-light + .power-light {
+top: 8rem;
+}
+
+
+@media (min-width: 480px) {.console-shell.system-shell--gba {
+font-size: 1.5vw;
+}
+
+}
+@media (min-width: 600px) {.console-shell.system-shell--gba {
+font-size: 1.2vw;
+}
+
+}
+@media (min-width: 720px) {.console-shell.system-shell--gba {
+font-size: 0.8vw;
+}
+
+}
+@media (min-width: 1080px) {.console-shell.system-shell--gba {
+font-size: 0.5vw;
+}
+
+}
+@media (min-width: 1600px) {.console-shell.system-shell--gba {
+font-size: 0.35vw;
+}
+
+}
+ 
+/* Scoped DS mockup */
+.console-shell.system-shell--ds .app-compat-placeholder {
+position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.console-shell.system-shell--ds {
+
+}
+.console-shell.system-shell--ds div.container {
+margin: auto;
+    position: absolute;
+    top: -200px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.console-shell.system-shell--ds div.topbody {
+margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 500px;
+    height: 250px;
+    background: rgba(76, 76, 76, 1);
+    background: -moz-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(76, 76, 76, 1)), color-stop(12%, rgba(46, 46, 46, 1)), color-stop(25%, rgba(69, 69, 69, 1)), color-stop(32%, rgba(46, 46, 46, 1)), color-stop(50%, rgba(0, 0, 0, 1)), color-stop(68%, rgba(46, 46, 46, 1)), color-stop(84%, rgba(43, 43, 43, 1)), color-stop(91%, rgba(28, 28, 28, 1)), color-stop(100%, rgba(19, 19, 19, 1)));
+    background: -webkit-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -o-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -ms-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: linear-gradient(to bottom, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#4c4c4c', endColorstr='#131313', GradientType=0);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border: 1px solid black;
+    -webkit-box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+-moz-box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+}
+.console-shell.system-shell--ds div.inner-topbody {
+width: 490px;
+    height: 240px;
+    background: rgba(59, 59, 59, 1);
+    background: -moz-linear-gradient(top, rgba(59, 59, 59, 1) 0%, rgba(125, 125, 125, 0.47) 100%);
+    background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(59, 59, 59, 1)), color-stop(100%, rgba(125, 125, 125, 0.47)));
+    background: -webkit-linear-gradient(top, rgba(59, 59, 59, 1) 0%, rgba(125, 125, 125, 0.47) 100%);
+    background: -o-linear-gradient(top, rgba(59, 59, 59, 1) 0%, rgba(125, 125, 125, 0.47) 100%);
+    background: -ms-linear-gradient(top, rgba(59, 59, 59, 1) 0%, rgba(125, 125, 125, 0.47) 100%);
+    background: linear-gradient(to bottom, rgba(59, 59, 59, 1) 0%, rgba(125, 125, 125, 0.47) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#3b3b3b', endColorstr='#7d7d7d', GradientType=0);
+    border-radius: 5px;
+    border: 1px solid #4D4D4D;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    -webkit-box-shadow: 0px 0px 15px 2px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: 0px 0px 15px 2px rgba(0, 0, 0, 0.75);
+    box-shadow: 0px 0px 15px 2px rgba(0, 0, 0, 0.75);
+}
+.console-shell.system-shell--ds div.dark-inner-top {
+width: 483px;
+    height: 233px;
+    margin: auto;
+    border-radius: 5px;
+    border: 1px solid #5E5E5E;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(76, 76, 76, 1);
+    background: -moz-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(19, 19, 19, 1) 100%);
+    background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(76, 76, 76, 1)), color-stop(100%, rgba(19, 19, 19, 1)));
+    background: -webkit-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(19, 19, 19, 1) 100%);
+    background: -o-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(19, 19, 19, 1) 100%);
+    background: -ms-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(19, 19, 19, 1) 100%);
+    background: linear-gradient(to bottom, rgba(76, 76, 76, 1) 0%, rgba(19, 19, 19, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#4c4c4c', endColorstr='#131313', GradientType=0);
+    box-shadow: inset 0px 0px 26px 14px #1A1A1A;
+    -webkit-box-shadow: inset 0px 0px 26px 14px #1A1A1A;
+    -moz-box-shadow: inset 0px 0px 26px 14px #1A1A1A;
+    -o-box-shadow: inset 0px 0px 26px 14px #1A1A1A;
+}
+.console-shell.system-shell--ds div.circle-box-left {
+height: 30px;
+    margin: auto;
+    position: absolute;
+    left: 25px;
+    top: 50%;
+}
+.console-shell.system-shell--ds div.circle-box-right {
+height: 30px;
+    margin: auto;
+    position: absolute;
+    right: 25px;
+    top: 50%;
+}
+.console-shell.system-shell--ds div.mini-circle {
+width: 5px;
+    height: 5px;
+    background: #0D0D0D;
+    border-radius: 50%;
+    -webkit-box-shadow: 0.5px 0.5px 0px 1px rgba(117, 117, 117, 0.34);
+    -moz-box-shadow: 0.5px 0.5px 0px 1px rgba(117, 117, 117, 0.34);
+    box-shadow: 0.5px 0.5px 0px 1px rgba(117, 117, 117, 0.34);
+}
+.console-shell.system-shell--ds table.circles tr td {
+width: 15px;
+    height: 13px;
+}
+.console-shell.system-shell--ds div.screen-outer {
+width: 280px;
+    height: 190px;
+    background: rgba(54, 54, 54, 1);
+    background: -moz-linear-gradient(-45deg, rgba(54, 54, 54, 1) 0%, rgba(20, 20, 20, 1) 100%);
+    background: -webkit-gradient(left top, right bottom, color-stop(0%, rgba(54, 54, 54, 1)), color-stop(100%, rgba(20, 20, 20, 1)));
+    background: -webkit-linear-gradient(-45deg, rgba(54, 54, 54, 1) 0%, rgba(20, 20, 20, 1) 100%);
+    background: -o-linear-gradient(-45deg, rgba(54, 54, 54, 1) 0%, rgba(20, 20, 20, 1) 100%);
+    background: -ms-linear-gradient(-45deg, rgba(54, 54, 54, 1) 0%, rgba(20, 20, 20, 1) 100%);
+    background: linear-gradient(135deg, rgba(54, 54, 54, 1) 0%, rgba(20, 20, 20, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#363636', endColorstr='#141414', GradientType=1);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    -webkit-box-shadow: 0px 0px 2px 1px rgba(71, 71, 71, 1);
+    -moz-box-shadow: 0px 0px 2px 1px rgba(71, 71, 71, 1);
+    box-shadow: 0px 0px 2px 1px rgba(71, 71, 71, 1);
+}
+.console-shell.system-shell--ds div.screen-inner {
+width: 260px;
+    height: 170px;
+    background: rgba(112, 110, 112, 1);
+    background: -moz-linear-gradient(-45deg, rgba(112, 110, 112, 1) 0%, rgba(69, 69, 69, 1) 100%);
+    background: -webkit-gradient(left top, right bottom, color-stop(0%, rgba(112, 110, 112, 1)), color-stop(100%, rgba(69, 69, 69, 1)));
+    background: -webkit-linear-gradient(-45deg, rgba(112, 110, 112, 1) 0%, rgba(69, 69, 69, 1) 100%);
+    background: -o-linear-gradient(-45deg, rgba(112, 110, 112, 1) 0%, rgba(69, 69, 69, 1) 100%);
+    background: -ms-linear-gradient(-45deg, rgba(112, 110, 112, 1) 0%, rgba(69, 69, 69, 1) 100%);
+    background: linear-gradient(135deg, rgba(112, 110, 112, 1) 0%, rgba(69, 69, 69, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#706e70', endColorstr='#454545', GradientType=1);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+}
+.console-shell.system-shell--ds div.black-square {
+width: 20px;
+    height: 20px;
+    margin: auto;
+    border-radius: 4px;
+    background: #242424;
+    -webkit-box-shadow: 0px 0.5px 0px 1px rgba(117, 117, 117, 0.28);
+    -moz-box-shadow: 0px 0.5px 0px 1px rgba(117, 117, 117, 0.28);
+    box-shadow: 0px 0.5px 0px 1px rgba(117, 117, 117, 0.28);
+}
+.console-shell.system-shell--ds .blk-top-left {
+position: absolute;
+    top: 9px;
+    left: 35px;
+}
+.console-shell.system-shell--ds .blk-top-right {
+position: absolute;
+    top: 9px;
+    right: 35px;
+}
+.console-shell.system-shell--ds .blk-bot-left {
+position: absolute;
+    bottom: 9px;
+    left: 35px;
+}
+.console-shell.system-shell--ds .blk-bot-right {
+position: absolute;
+    bottom: 9px;
+    right: 35px;
+}
+.console-shell.system-shell--ds div.midbar {
+width: 500px;
+    height: 25px;
+    border-radius: 20px;
+    background: rgba(76, 76, 76, 1);
+    background: -moz-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(89, 89, 89, 1) 12%, rgba(117, 117, 117, 1) 39%, rgba(71, 71, 71, 1) 52%, rgba(44, 44, 44, 1) 61%, rgba(51, 51, 51, 1) 70%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(76, 76, 76, 1)), color-stop(12%, rgba(89, 89, 89, 1)), color-stop(39%, rgba(117, 117, 117, 1)), color-stop(52%, rgba(71, 71, 71, 1)), color-stop(61%, rgba(44, 44, 44, 1)), color-stop(70%, rgba(51, 51, 51, 1)), color-stop(76%, rgba(43, 43, 43, 1)), color-stop(91%, rgba(28, 28, 28, 1)), color-stop(100%, rgba(19, 19, 19, 1)));
+    background: -webkit-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(89, 89, 89, 1) 12%, rgba(117, 117, 117, 1) 39%, rgba(71, 71, 71, 1) 52%, rgba(44, 44, 44, 1) 61%, rgba(51, 51, 51, 1) 70%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -o-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(89, 89, 89, 1) 12%, rgba(117, 117, 117, 1) 39%, rgba(71, 71, 71, 1) 52%, rgba(44, 44, 44, 1) 61%, rgba(51, 51, 51, 1) 70%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -ms-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(89, 89, 89, 1) 12%, rgba(117, 117, 117, 1) 39%, rgba(71, 71, 71, 1) 52%, rgba(44, 44, 44, 1) 61%, rgba(51, 51, 51, 1) 70%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: linear-gradient(to bottom, rgba(76, 76, 76, 1) 0%, rgba(89, 89, 89, 1) 12%, rgba(117, 117, 117, 1) 39%, rgba(71, 71, 71, 1) 52%, rgba(44, 44, 44, 1) 61%, rgba(51, 51, 51, 1) 70%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#4c4c4c', endColorstr='#131313', GradientType=0);
+    margin: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 275px;
+    z-index: 1000;
+    -webkit-box-shadow: inset 0px 0px 12px 5px rgba(0, 0, 0, 0.75), 0px 0px 16px 3px rgba(36,36,36,0.3);
+    -moz-box-shadow: inset 0px 0px 12px 5px rgba(0, 0, 0, 0.75), 0px 0px 16px 3px rgba(36,36,36,0.3);
+    box-shadow: inset 0px 0px 12px 5px rgba(0, 0, 0, 0.75), 0px 0px 16px 3px rgba(36,36,36,0.3);
+    overflow: hidden;
+}
+.console-shell.system-shell--ds .midbar-line {
+width: 1px;
+    height: 100%;
+    background: #383838;
+    -webkit-box-shadow: 0px 0px 1px 0px rgba(87, 87, 87, 1);
+    -moz-box-shadow: 0px 0px 1px 0px rgba(87, 87, 87, 1);
+    box-shadow: 0px 0px 1px 0px rgba(87, 87, 87, 1);
+}
+.console-shell.system-shell--ds .left-line {
+position: absolute;
+    left: 70px;
+}
+.console-shell.system-shell--ds .right-line {
+position: absolute;
+    right: 70px;
+}
+.console-shell.system-shell--ds .battery-light {
+width: 4px;
+    height: 75%;
+    border-radius: 2px;
+    background: rgba(103, 173, 56, 1);
+    background: -moz-linear-gradient(left, rgba(103, 173, 56, 1) 0%, rgba(77, 105, 41, 1) 100%);
+    background: -webkit-gradient(left top, right top, color-stop(0%, rgba(103, 173, 56, 1)), color-stop(100%, rgba(77, 105, 41, 1)));
+    background: -webkit-linear-gradient(left, rgba(103, 173, 56, 1) 0%, rgba(77, 105, 41, 1) 100%);
+    background: -o-linear-gradient(left, rgba(103, 173, 56, 1) 0%, rgba(77, 105, 41, 1) 100%);
+    background: -ms-linear-gradient(left, rgba(103, 173, 56, 1) 0%, rgba(77, 105, 41, 1) 100%);
+    background: linear-gradient(to right, rgba(103, 173, 56, 1) 0%, rgba(77, 105, 41, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#67ad38', endColorstr='#4d6929', GradientType=1);
+    -webkit-box-shadow: inset 0px 0px 1px 0px rgba(0, 0, 0, 0.75);
+    -moz-box-shadow: inset 0px 0px 1px 0px rgba(0, 0, 0, 0.75);
+    box-shadow: inset 0px 0px 1px 0px rgba(0, 0, 0, 0.75);
+}
+.console-shell.system-shell--ds .battery-left {
+position: absolute;
+    right: 25px;
+    top: 2px;
+}
+.console-shell.system-shell--ds .battery-right {
+position: absolute;
+    right: 18px;
+    top: 2px;
+}
+.console-shell.system-shell--ds .mic-hole {
+width: 5px;
+    height: 55%;
+    border-radius: 2px;
+    background: #0b0b0b;
+    position: absolute;
+    top: 5px;
+    left: 250px;
+    -webkit-box-shadow: 0px 0px 1px 0px rgb(105, 105, 105);
+    -moz-box-shadow: 0px 0px 1px 0px rgba(105, 105, 105);
+    box-shadow: 0px 0px 1px 0px rgba(105, 105, 105);
+}
+.console-shell.system-shell--ds .mic-text {
+font-family: "Century Gothic", arial, helvetica, sans-serif;
+    font-size: 8px;
+    color: #767676;
+    text-transform: uppercase;
+    position: absolute;
+    left: 260px;
+    top: -2px;
+    text-shadow: 0px 2px 0px rgba(0, 0, 0, 1);
+}
+.console-shell.system-shell--ds div.botbody {
+margin: auto;
+    position: absolute;
+    top: 545px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 500px;
+    height: 250px;
+    background: rgba(76, 76, 76, 1);
+    background: -moz-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(76, 76, 76, 1)), color-stop(12%, rgba(46, 46, 46, 1)), color-stop(25%, rgba(69, 69, 69, 1)), color-stop(32%, rgba(46, 46, 46, 1)), color-stop(50%, rgba(0, 0, 0, 1)), color-stop(68%, rgba(46, 46, 46, 1)), color-stop(84%, rgba(43, 43, 43, 1)), color-stop(91%, rgba(28, 28, 28, 1)), color-stop(100%, rgba(19, 19, 19, 1)));
+    background: -webkit-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -o-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -ms-linear-gradient(top, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: linear-gradient(to bottom, rgba(76, 76, 76, 1) 0%, rgba(46, 46, 46, 1) 12%, rgba(69, 69, 69, 1) 25%, rgba(46, 46, 46, 1) 32%, rgba(0, 0, 0, 1) 50%, rgba(46, 46, 46, 1) 68%, rgba(43, 43, 43, 1) 84%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#4c4c4c', endColorstr='#131313', GradientType=0);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border: 1px solid black;
+    -webkit-box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+-moz-box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+box-shadow: 0px 0px 16px 3px rgba(36,36,36,0.3);
+}
+.console-shell.system-shell--ds div.dark-inner-bot {
+width: 495px;
+    height: 245px;
+    margin: auto;
+    border-radius: 5px;
+    border: 1px solid #5E5E5E;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(76, 76, 76, 1);
+    background: -moz-linear-gradient(-45deg, rgba(76, 76, 76, 1) 0%, rgba(66, 66, 66, 1) 12%, rgba(61, 61, 61, 1) 28%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -webkit-gradient(left top, right bottom, color-stop(0%, rgba(76, 76, 76, 1)), color-stop(12%, rgba(66, 66, 66, 1)), color-stop(28%, rgba(61, 61, 61, 1)), color-stop(76%, rgba(43, 43, 43, 1)), color-stop(91%, rgba(28, 28, 28, 1)), color-stop(100%, rgba(19, 19, 19, 1)));
+    background: -webkit-linear-gradient(-45deg, rgba(76, 76, 76, 1) 0%, rgba(66, 66, 66, 1) 12%, rgba(61, 61, 61, 1) 28%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -o-linear-gradient(-45deg, rgba(76, 76, 76, 1) 0%, rgba(66, 66, 66, 1) 12%, rgba(61, 61, 61, 1) 28%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: -ms-linear-gradient(-45deg, rgba(76, 76, 76, 1) 0%, rgba(66, 66, 66, 1) 12%, rgba(61, 61, 61, 1) 28%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    background: linear-gradient(135deg, rgba(76, 76, 76, 1) 0%, rgba(66, 66, 66, 1) 12%, rgba(61, 61, 61, 1) 28%, rgba(43, 43, 43, 1) 76%, rgba(28, 28, 28, 1) 91%, rgba(19, 19, 19, 1) 100%);
+    filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#4c4c4c', endColorstr='#131313', GradientType=1);
+    -webkit-box-shadow: inset 0px 12px 14px 1px rgba(20, 20, 20, 1), inset 3px -3px 5px 0px rgba(92, 92, 92, 1);
+    -moz-box-shadow: inset 0px 12px 14px 1px rgba(20, 20, 20, 1), inset 3px -3px 5px 0px rgba(92, 92, 92, 1);
+    box-shadow: inset 0px 12px 14px 1px rgba(20, 20, 20, 1), inset 3px -3px 5px 0px rgba(92, 92, 92, 1);
+}
+.console-shell.system-shell--ds div.buttons-box {
+width: 80px;
+    height: 80px;
+    position: absolute;
+    z-index: 101;
+    left: 400px;
+    top: 50px;
+}
+.console-shell.system-shell--ds div.game-button {
+width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #1c1c1c;
+    -webkit-box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+    -moz-box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+    box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+    font-family: "century gothic", arial, helvetica, sans-serif;
+    color: #b1b1b1;
+    font-size: 10px;
+    text-align: center;
+    line-height: 25px;
+  transition: 200ms;
+}
+.console-shell.system-shell--ds div.game-button:hover {
+-webkit-box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 11px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    -moz-box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 1px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 1px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    cursor: pointer;
+}
+.console-shell.system-shell--ds div.set-button-box {
+width: 80px;
+    height: 30px;
+    position: absolute;
+    z-index: 98;
+    left: 420px;
+    top: 200px;
+}
+.console-shell.system-shell--ds div.set-button-box ul {
+list-style: none;
+    position: absolute;
+    right: 70px;
+    bottom: -10px;
+}
+.console-shell.system-shell--ds div.set-button-box ul li {
+padding-top: 10px;
+}
+.console-shell.system-shell--ds div.set-button {
+width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #1c1c1c;
+    -webkit-box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+    -moz-box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+    box-shadow: inset 1px 1px 1px 0px rgba(120, 120, 120, 1), 2px 2px 6px 2px rgba(10, 10, 10, 1);
+  transition: 200ms;
+}
+.console-shell.system-shell--ds div.set-button:hover {
+-webkit-box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 11px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    -moz-box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 1px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    box-shadow: inset 0px 0px 8px 2px rgba(10, 10, 10, 1), 1px 1px 0px 0px rgba(84, 84, 84, 1), -1px -1px 3px 2px rgba(10, 10, 10, 1);
+    cursor: pointer;
+}
+.console-shell.system-shell--ds div.set-text {
+width: 30px;
+    float: right;
+    font-family: "century gothic", arial, helvetica, sans-serif;
+    color: #b1b1b1;
+    font-size: 7px;
+    text-align: center;
+    line-height: 15px;
+    text-transform: uppercase;
+    position: relative;
+    top: -10px;
+    left: 5px;
+    text-shadow: 0px 1px 0px rgb(29, 29, 29);
+}
+.console-shell.system-shell--ds div.cross-box {
+width: 80px;
+    height: 80px;
+    position: absolute;
+    right: 400px;
+    top: 50px;
+}
+.console-shell.system-shell--ds div.top-cross {
+width: 15px;
+    height: 22px;
+    background: #222;
+    position: absolute;
+    z-index: 100;
+    left: 33px;
+    top: 10px;
+    transition: 200ms;
+    -webkit-box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+    -moz-box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 00.2);
+    box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+}
+.console-shell.system-shell--ds div.left-cross {
+width: 28px;
+    height: 15px;
+    position: absolute;
+    z-index: 99;
+    left: 12px;
+    top: 30px;
+    background: #222;
+    transition: 200ms;
+    -webkit-box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+    -moz-box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+    box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+}
+.console-shell.system-shell--ds div.bot-cross {
+width: 15px;
+    height: 22px;
+    background: #222;
+    position: absolute;
+    z-index: 98;
+    left: 33px;
+    top: 45px;
+    transition: 200ms;
+    -webkit-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
+    -moz-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
+    box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
+}
+.console-shell.system-shell--ds div.right-cross {
+width: 28px;
+    height: 15px;
+    background: #222;
+    position: absolute;
+    left: 40px;
+    top: 30px;
+    z-index: 98;
+    transition: 200ms;
+    -webkit-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+    -moz-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+    box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+}
+.console-shell.system-shell--ds div.right-cross:hover,
+.console-shell.system-shell--ds div.left-cross:hover,
+.console-shell.system-shell--ds div.top-cross:hover,
+.console-shell.system-shell--ds div.bot-cross:hover {
+cursor: pointer;
+}
+.console-shell.system-shell--ds div.left-cross:hover {
+-webkit-box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+    -moz-box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+    box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+}
+.console-shell.system-shell--ds div.top-cross:hover {
+-webkit-box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+    -moz-box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+    box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+}
+.console-shell.system-shell--ds div.bot-cross:hover {
+-webkit-box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+    -moz-box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+    box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+}
+.console-shell.system-shell--ds div.right-cross:hover {
+-webkit-box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
+    -moz-box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
+    box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
+}
+.console-shell.system-shell--ds div.horiz-line {
+width: 8px;
+    height: 1px;
+    background: #868686;
+}
+.console-shell.system-shell--ds div.verti-line {
+width: 1px;
+    height: 10px;
+    background: #868686;
+}
+.console-shell.system-shell--ds div.horiz-left {
+position: absolute;
+    left: 5px;
+    top: 7px;
+}
+.console-shell.system-shell--ds div.horiz-right {
+position: absolute;
+    top: 7px;
+    left: 15px;
+}
+.console-shell.system-shell--ds div.verti-top {
+position: absolute;
+    left: 7px;
+    top: 4px;
+}
+.console-shell.system-shell--ds div.verti-bot {
+position: absolute;
+    left: 7px;
+    bottom: 4px;
+}
+
+/* Index-specific fit fixes */
+.console-shell.system-shell--gba {
+  font-size: clamp(4.8px, 0.45vw, 6px);
+  width: auto;
+  height: auto;
+  min-height: 0;
+  align-items: flex-start;
+  background: transparent;
+}
+
+.console-shell.system-shell--gba .system-container#gbasp {
+  margin: 8px auto 0;
+  transform: none;
+  zoom: 0.38;
+}
+
+.console-shell.system-shell--gba .system-container#gbasp .screen {
+  position: relative;
+  overflow: hidden;
+}
+
+.console-shell.system-shell--gba .system-container#gbasp .screen #screen-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+.console-shell.system-shell--gba .system-container#gbasp .screen #screen {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.console-shell.system-shell--gba .system-container#gbasp .screen #screen-hint,
+.console-shell.system-shell--gba .system-container#gbasp .screen #menu-overlay {
+  inset: 0;
+}
+
+.console-shell.system-shell--ds .container {
+  transform: scale(0.94);
+  transform-origin: center center;
+}
+
+/* Layout cleanup */
+.console-shell-host {
+  align-items: flex-start;
+  padding: 8px 0 24px;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* GBA input overlays */
+.console-shell.system-shell--gba .d-pad button {
+  position: absolute;
+  display: block;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  z-index: 4;
+}
+
+.console-shell.system-shell--gba .d-pad .d-up {
+  top: 0;
+  left: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.console-shell.system-shell--gba .d-pad .d-down {
+  left: 0;
+  bottom: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.console-shell.system-shell--gba .d-pad .d-left {
+  top: 2.6rem;
+  left: -3.1rem;
+  width: 3.1rem;
+  height: 2.8rem;
+}
+
+.console-shell.system-shell--gba .d-pad .d-right {
+  top: 2.6rem;
+  left: 2.8rem;
+  width: 3.1rem;
+  height: 2.8rem;
+}
+
+/* DS controls need button-compatible selectors */
+.console-shell.system-shell--ds .game-button {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1c1c1c;
+  position: relative;
+  z-index: 100;
+  box-shadow: inset 0 0 8px 2px #0a0a0a, 1px 1px 0 0 #545454, -1px -1px 3px 2px #0a0a0a;
+  color: #cfcfcf;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.console-shell.system-shell--ds .set-button {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1c1c1c;
+  position: relative;
+  z-index: 99;
+  box-shadow: inset 0 0 8px 2px #0a0a0a, 1px 1px 0 0 #545454, -1px -1px 3px 2px #0a0a0a;
+}
+
+.console-shell.system-shell--ds .top-cross {
+  width: 15px;
+  height: 22px;
+  background: #222;
+  position: absolute;
+  z-index: 100;
+  right: 26px;
+  top: 12px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  box-shadow: inset -2px 2px 2px 0 #0a0a0a, -1px -1px 2px 0 #4d4d4d;
+}
+
+.console-shell.system-shell--ds .left-cross {
+  width: 28px;
+  height: 15px;
+  position: absolute;
+  z-index: 99;
+  top: 33px;
+  left: 12px;
+  background: #222;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  box-shadow: inset 2px 2px 2px 0 #0a0a0a, -1px -1px 2px 0 #4d4d4d;
+}
+
+.console-shell.system-shell--ds .bot-cross {
+  width: 15px;
+  height: 22px;
+  background: #222;
+  position: absolute;
+  z-index: 97;
+  left: 32px;
+  top: 40px;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  box-shadow: inset 2px -2px 2px 0 #0a0a0a, 1px 1px 2px 0 #4d4d4d;
+}
+
+.console-shell.system-shell--ds .right-cross {
+  width: 28px;
+  height: 15px;
+  background: #222;
+  position: absolute;
+  z-index: 98;
+  top: 33px;
+  left: 39px;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  box-shadow: inset -2px -2px 2px 0 #0a0a0a, 1px -1px 2px 0 #4d4d4d;
+}
+
+

@@ -3,133 +3,232 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GBC Mockup</title>
+    <title>GBC Mockup App</title>
     <link rel="stylesheet" href="./gbc.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   </head>
-  <body>
+  <body data-theme="teal" data-system="gbc">
     <div class="gameboy" id="GameBoy">
-  
-  <div class="screen-area">
-    
-    <div class="power">
-      <div class="indicator">
-        <div class="led"></div>
-        <span class="arc" style="z-index:2"></span>
-        <span class="arc" style="z-index:1"></span>
-        <span class="arc" style="z-index:0"></span>
-      </div>
-      POWER
-    </div>
-    
-    <canvas class="display" id="mainCanvas"></canvas>
-    
-    <div class="label">
-      <div class="title">GAME BOY</div>
-      <div class="subtitle">
-        <span class="c">C</span><!--
-     --><span class="o1">O</span><!--
-     --><span class="l">L</span><!--
-     --><span class="o2">O</span><!--
-     --><span class="r">R</span>
-      </div>
-    </div>
-    
-  </div>
-  
-  <div class="nintendo">Nintendo</div>
-  
-  <div class="controls">
-    <div class="dpad">
-      <div class="up"><i class="fa fa-caret-up"></i></div>
-      <div class="right"><i class="fa fa-caret-right"></i></div>
-      <div class="down"><i class="fa fa-caret-down"></i></div>
-      <div class="left"><i class="fa fa-caret-left"></i></div>
-      <div class="middle"></div>
-    </div>
-    <div class="a-b">
-      <div class="b">B</div>
-      <div class="a">A</div>
-    </div>
-  </div>
-  
-  <div class="start-select">
-    <div class="select">SELECT</div>
-    <div class="start">START</div>
-  </div>
-  
-  <div class="speaker">
-    <div class="dot placeholder"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot placeholder"></div>
-    
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
+      <div class="screen-area">
+        <div class="power">
+          <div class="indicator">
+            <div class="led"></div>
+            <span class="arc" style="z-index:2"></span>
+            <span class="arc" style="z-index:1"></span>
+            <span class="arc" style="z-index:0"></span>
+          </div>
+          POWER
+        </div>
 
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
+        <canvas class="display" id="screen" width="160" height="144" aria-label="Pantalla Game Boy"></canvas>
 
-    <div class="dot placeholder"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot closed"></div>
-    <div class="dot open"></div>
-    <div class="dot placeholder"></div>
-  </div>
-  
-</div>
+        <div class="label">
+          <div class="title">GAME BOY</div>
+          <div class="subtitle">
+            <span class="c">C</span><span class="o1">O</span><span class="l">L</span><span class="o2">O</span><span class="r">R</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nintendo" id="console-emblem">Nintendo</div>
+      <div id="screen-marquee" hidden>GAME BOY COLOR</div>
+
+      <div class="controls">
+        <div class="dpad">
+          <div class="up" data-button="up"><i class="fa fa-caret-up"></i></div>
+          <div class="right" data-button="right"><i class="fa fa-caret-right"></i></div>
+          <div class="down" data-button="down"><i class="fa fa-caret-down"></i></div>
+          <div class="left" data-button="left"><i class="fa fa-caret-left"></i></div>
+          <div class="middle"></div>
+        </div>
+        <div class="a-b">
+          <div class="b" data-button="b">B</div>
+          <div class="a" data-button="a">A</div>
+        </div>
+      </div>
+
+      <div class="start-select">
+        <div class="select" data-button="select">SELECT</div>
+        <div class="start" data-button="start">START</div>
+      </div>
+
+      <div class="speaker">
+        <div class="dot placeholder"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot placeholder"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+        <div class="dot open"></div>
+        <div class="dot closed"></div>
+      </div>
+    </div>
+
+    <div id="app-compat" aria-hidden="true">
+      <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds" />
+      <input id="save-file-input" type="file" accept=".sav,.json,.txt" />
+      <p id="status-line">Esperando una ROM local.</p>
+      <pre id="state-output"></pre>
+
+      <div id="screen-wrap" class="screen-wrap scanlines screen">
+        <div id="ds-screens"></div>
+        <canvas id="ds-top-screen" width="256" height="192"></canvas>
+        <canvas id="ds-bottom-screen" width="256" height="192"></canvas>
+        <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+        <div id="menu-overlay" class="menu-overlay hidden"></div>
+      </div>
+
+      <button id="toggle-menu-btn" type="button">Mostrar overlay</button>
+      <button id="drawer-overlay-btn" type="button">Mostrar overlay</button>
+      <button id="drawer-toggle-btn" type="button">Menu</button>
+      <button id="drawer-close-btn" type="button">Cerrar</button>
+      <div id="drawer-backdrop"></div>
+      <aside id="control-drawer"></aside>
+      <button id="quick-menu-btn" type="button">Ajustes</button>
+      <button id="power-btn" type="button">Pausar</button>
+      <button id="fullscreen-btn" type="button">Pantalla completa</button>
+      <button id="speed-btn" type="button">Velocidad x1</button>
+      <button id="console-power-btn" type="button"></button>
+      <button id="import-save-btn" type="button">Importar save</button>
+      <button id="export-save-btn" type="button">Exportar save</button>
+      <button id="drawer-import-save-btn" type="button">Importar save</button>
+      <button id="drawer-export-save-btn" type="button">Exportar save</button>
+      <button id="reset-filter-btn" type="button">Reset visual</button>
+      <button id="restore-defaults-btn" type="button">Restaurar ajustes</button>
+      <button id="reset-keymap-btn" type="button">Reset teclas</button>
+
+      <select id="overlay-context">
+        <option value="battle-root">Batalla raiz</option>
+        <option value="battle-fight">Ataques</option>
+        <option value="party">Party</option>
+        <option value="bag">Bag</option>
+        <option value="nav">Navegacion</option>
+      </select>
+      <input id="overlay-auto-follow" type="checkbox" />
+      <input id="overlay-opacity" type="range" min="45" max="100" step="1" />
+      <input id="volume-range" type="range" min="0" max="100" step="1" />
+      <input id="scanlines-toggle" type="checkbox" />
+      <input id="start-with-button-toggle" type="checkbox" />
+      <select id="filter-select">
+        <option value="lcd">LCD</option>
+        <option value="pixel">Pixel perfect</option>
+        <option value="soft">Blur off</option>
+        <option value="boost">Color boost</option>
+      </select>
+      <input id="filter-intensity" type="range" min="0" max="100" step="1" />
+      <input id="touch-controls-toggle" type="checkbox" />
+      <select id="theme-select">
+        <option value="teal">Teal</option>
+        <option value="sunset">Sunset</option>
+        <option value="graphite">Graphite</option>
+      </select>
+
+      <span id="context-badge">battle-root</span>
+      <span id="overlay-summary">Overlay oculto</span>
+      <div id="brand-chip">Pocket Codex Color</div>
+      <div id="system-chip">Sistema GBC</div>
+      <div id="save-mode-chip">Save states</div>
+      <span id="system-badge">gbc</span>
+      <p id="system-description">Modo GB/GBC activo.</p>
+      <div id="system-toggle" role="group" aria-label="Selector de sistema">
+        <button type="button" class="system-toggle-btn" data-system-toggle="auto">Auto</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
+      </div>
+      <strong id="control-profile">Perfil GB/GBC</strong>
+      <span id="control-hint">Flechas, Z, X, Enter, Backspace.</span>
+      <strong id="save-profile">Guardado por estado</strong>
+      <span id="save-hint">Save states del emulador.</span>
+
+      <form id="cheat-form">
+        <input id="cheat-address" type="text" />
+        <input id="cheat-value" type="text" />
+        <input id="cheat-label" type="text" />
+        <button id="add-cheat-btn" type="submit">Anadir cheat</button>
+      </form>
+      <div id="cheat-list"></div>
+      <span id="cheat-count-badge">0 activos</span>
+
+      <div class="attack-editor">
+        <input data-attack-index="0" type="text" maxlength="18" />
+        <input data-attack-index="1" type="text" maxlength="18" />
+        <input data-attack-index="2" type="text" maxlength="18" />
+        <input data-attack-index="3" type="text" maxlength="18" />
+      </div>
+
+      <div id="keymap-grid">
+        <button type="button" class="keymap-btn" data-keymap-action="up">Arriba</button>
+        <button type="button" class="keymap-btn" data-keymap-action="down">Abajo</button>
+        <button type="button" class="keymap-btn" data-keymap-action="left">Izquierda</button>
+        <button type="button" class="keymap-btn" data-keymap-action="right">Derecha</button>
+        <button type="button" class="keymap-btn" data-keymap-action="a">A</button>
+        <button type="button" class="keymap-btn" data-keymap-action="b">B</button>
+        <button type="button" class="keymap-btn" data-keymap-action="x">X</button>
+        <button type="button" class="keymap-btn" data-keymap-action="y">Y</button>
+        <button type="button" class="keymap-btn" data-keymap-action="start">Start</button>
+        <button type="button" class="keymap-btn" data-keymap-action="select">Select</button>
+        <button type="button" class="keymap-btn" data-keymap-action="l">L</button>
+        <button type="button" class="keymap-btn" data-keymap-action="r">R</button>
+      </div>
+
+      <div class="touch-controls" id="touch-controls">
+        <button type="button" class="touch-btn" data-button="up">up</button>
+        <button type="button" class="touch-btn" data-button="down">down</button>
+        <button type="button" class="touch-btn" data-button="left">left</button>
+        <button type="button" class="touch-btn" data-button="right">right</button>
+        <button type="button" class="touch-btn" data-button="a">a</button>
+        <button type="button" class="touch-btn" data-button="b">b</button>
+      </div>
+    </div>
+
+    <script src="./vendor/gameboy-online/js/other/base64.js"></script>
+    <script src="./vendor/gameboy-online/js/other/resampler.js"></script>
+    <script src="./vendor/gameboy-online/js/other/XAudioServer.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyCore.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyIO.js"></script>
+    <script src="./vendor/gba-js/js/util.js"></script>
+    <script src="./vendor/gba-js/js/core.js"></script>
+    <script src="./vendor/gba-js/js/arm.js"></script>
+    <script src="./vendor/gba-js/js/thumb.js"></script>
+    <script src="./vendor/gba-js/js/mmu.js"></script>
+    <script src="./vendor/gba-js/js/io.js"></script>
+    <script src="./vendor/gba-js/js/audio.js"></script>
+    <script src="./vendor/gba-js/js/video.js"></script>
+    <script src="./vendor/gba-js/js/video/proxy.js"></script>
+    <script src="./vendor/gba-js/js/video/software.js"></script>
+    <script src="./vendor/gba-js/js/irq.js"></script>
+    <script src="./vendor/gba-js/js/keypad.js"></script>
+    <script src="./vendor/gba-js/js/sio.js"></script>
+    <script src="./vendor/gba-js/js/savedata.js"></script>
+    <script src="./vendor/gba-js/js/gpio.js"></script>
+    <script src="./vendor/gba-js/js/gba.js"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
+    <script src="./src/app.js?v=20260313-page-system-fix"></script>
+  </body>
+</html>

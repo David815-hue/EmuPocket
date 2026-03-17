@@ -3,89 +3,225 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GBA Web Prototype</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23284453'/%3E%3Crect x='7' y='6' width='18' height='20' rx='3' fill='%23d8f0cf' stroke='%230d171b' stroke-width='2'/%3E%3Ccircle cx='10' cy='27' r='2' fill='%23ff8b5e'/%3E%3C/svg%3E"
-    />
+    <title>GBA Mockup App</title>
     <link rel="stylesheet" href="./gba.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   </head>
   <body data-theme="sunset" data-system="gba">
     <div class="system-container" id="gbasp">
-	<div class="screen-body">
-		<div class="screen-bumper" id="bumper-ul"></div>
-			<div class="screen-bumper" id="bumper-ur"></div>
-			<div class="screen-bumper small-bumper" id="bumper-tm"></div>
-			<div class="screen-bumper small-bumper" id="bumper-ll"></div>
-			<div class="screen-bumper small-bumper" id="bumper-lr"></div>
-			<div class="screen-border">
-				<div class="screen"><iframe width="560" height="315" src="https://www.youtube.com/embed/YFKusOerZDA?autoplay=0" frameborder="0"></iframe></div>
-				<img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Gameboy_advance_SP_logo.svg">
-				</div>
-	</div>
-	<div class="swivel"> </div>
-	
-	<div class="gamepad-body">
-	
-		<div class="power-light"></div>
-		<div class="power-light"></div>
+      <div class="screen-body">
+        <div class="screen-bumper" id="bumper-ul"></div>
+        <div class="screen-bumper" id="bumper-ur"></div>
+        <div class="screen-bumper small-bumper" id="bumper-tm"></div>
+        <div class="screen-bumper small-bumper" id="bumper-ll"></div>
+        <div class="screen-bumper small-bumper" id="bumper-lr"></div>
+        <div class="screen-border">
+          <div class="screen">
+            <canvas id="screen" width="240" height="160" aria-label="Pantalla Game Boy Advance"></canvas>
+          </div>
+          <img src="./assets/gba-sp-logo.svg" alt="Game Boy Advance SP" />
+        </div>
+      </div>
 
-		
-			<div class="pad-container dpad-container">
-				<div class="d-pad"></div>
-			</div>
-				
-			<div class="pad-container buttons-container"> 
-				<div class="b-button">
-					<span class="letter">B</span>
-				</div>
-				
-				<a href="#"><div class="a-button">
-					<span class="letter">A</span>
-				</div></a>
-				
-			</div>
-				
-			<div class="pad-container power-container">
-				<a href="#"><div class="b-button power-button"> 
-					</div></a>
-			</div>
-				<div class="speaker-holder">
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot large-dot"></div>
-					<div class="dot large-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot large-dot"></div>
-					<div class="dot large-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-					<div class="dot small-dot"></div>
-		</div>
-			
-		
-		<div class="pad-container select-container">
-			<div class="a-button select-button"> </div>
-			</div>
+      <div class="swivel"></div>
+      <div id="console-emblem" hidden>Nintendo</div>
+      <div id="screen-marquee" hidden>GAME BOY ADVANCE</div>
 
-		<div class="pad-container start-container">
-				<div class="a-button start-button"> 
-			</div>
-			</div>
-		
-		<div class="select-label">SELECT</div>
-		<div class="select-label">SELECT</div>
+      <div class="gamepad-body">
+        <div class="power-light"></div>
+        <div class="power-light"></div>
 
-		<div class="start-label">START</div>
-		<div class="start-label">START</div>
-<This is not a valid tag>
+        <div class="pad-container dpad-container">
+          <div class="d-pad">
+            <button type="button" class="d-up" data-button="up" aria-label="Arriba"></button>
+            <button type="button" class="d-right" data-button="right" aria-label="Derecha"></button>
+            <button type="button" class="d-down" data-button="down" aria-label="Abajo"></button>
+            <button type="button" class="d-left" data-button="left" aria-label="Izquierda"></button>
+          </div>
+        </div>
 
-	</div>
-</div>
+        <div class="pad-container buttons-container">
+          <button type="button" class="b-button" data-button="b"><span class="letter">B</span></button>
+          <button type="button" class="a-button" data-button="a"><span class="letter">A</span></button>
+        </div>
+
+        <div class="pad-container power-container">
+          <button id="console-power-btn" type="button" class="b-button power-button" aria-label="Power"></button>
+        </div>
+
+        <div class="speaker-holder">
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot large-dot"></div>
+          <div class="dot large-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot large-dot"></div>
+          <div class="dot large-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+          <div class="dot small-dot"></div>
+        </div>
+
+        <div class="pad-container select-container">
+          <button type="button" class="a-button select-button" data-button="select"></button>
+        </div>
+
+        <div class="pad-container start-container">
+          <button type="button" class="a-button start-button" data-button="start"></button>
+        </div>
+
+        <div class="select-label">SELECT</div>
+        <div class="select-label shadow">SELECT</div>
+        <div class="start-label">START</div>
+        <div class="start-label shadow">START</div>
+      </div>
+    </div>
+
+    <div id="app-compat" aria-hidden="true">
+      <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds" />
+      <input id="save-file-input" type="file" accept=".sav,.json,.txt" />
+      <p id="status-line">Esperando una ROM local.</p>
+      <pre id="state-output"></pre>
+
+      <div id="screen-wrap" class="screen-wrap scanlines screen">
+        <div id="ds-screens"></div>
+        <canvas id="ds-top-screen" width="256" height="192"></canvas>
+        <canvas id="ds-bottom-screen" width="256" height="192"></canvas>
+        <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+        <div id="menu-overlay" class="menu-overlay hidden"></div>
+      </div>
+
+      <button id="toggle-menu-btn" type="button">Mostrar overlay</button>
+      <button id="drawer-overlay-btn" type="button">Mostrar overlay</button>
+      <button id="drawer-toggle-btn" type="button">Menu</button>
+      <button id="drawer-close-btn" type="button">Cerrar</button>
+      <div id="drawer-backdrop"></div>
+      <aside id="control-drawer"></aside>
+      <button id="quick-menu-btn" type="button">Ajustes</button>
+      <button id="power-btn" type="button">Pausar</button>
+      <button id="fullscreen-btn" type="button">Pantalla completa</button>
+      <button id="speed-btn" type="button">Velocidad x1</button>
+      <button id="import-save-btn" type="button">Importar save</button>
+      <button id="export-save-btn" type="button">Exportar save</button>
+      <button id="drawer-import-save-btn" type="button">Importar save</button>
+      <button id="drawer-export-save-btn" type="button">Exportar save</button>
+      <button id="reset-filter-btn" type="button">Reset visual</button>
+      <button id="restore-defaults-btn" type="button">Restaurar ajustes</button>
+      <button id="reset-keymap-btn" type="button">Reset teclas</button>
+
+      <select id="overlay-context">
+        <option value="battle-root">Batalla raiz</option>
+        <option value="battle-fight">Ataques</option>
+        <option value="party">Party</option>
+        <option value="bag">Bag</option>
+        <option value="nav">Navegacion</option>
+      </select>
+      <input id="overlay-auto-follow" type="checkbox" />
+      <input id="overlay-opacity" type="range" min="45" max="100" step="1" />
+      <input id="volume-range" type="range" min="0" max="100" step="1" />
+      <input id="scanlines-toggle" type="checkbox" />
+      <input id="start-with-button-toggle" type="checkbox" />
+      <select id="filter-select">
+        <option value="lcd">LCD</option>
+        <option value="pixel">Pixel perfect</option>
+        <option value="soft">Blur off</option>
+        <option value="boost">Color boost</option>
+      </select>
+      <input id="filter-intensity" type="range" min="0" max="100" step="1" />
+      <input id="touch-controls-toggle" type="checkbox" />
+      <select id="theme-select">
+        <option value="teal">Teal</option>
+        <option value="sunset">Sunset</option>
+        <option value="graphite">Graphite</option>
+      </select>
+
+      <span id="context-badge">battle-root</span>
+      <span id="overlay-summary">Overlay oculto</span>
+      <div id="brand-chip">Pocket Codex Advance</div>
+      <div id="system-chip">Sistema GBA</div>
+      <div id="save-mode-chip">SRAM por slots</div>
+      <span id="system-badge">gba</span>
+      <p id="system-description">Modo GBA activo.</p>
+      <div id="system-toggle" role="group" aria-label="Selector de sistema">
+        <button type="button" class="system-toggle-btn" data-system-toggle="auto">Auto</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
+        <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
+      </div>
+      <strong id="control-profile">Perfil GBA</strong>
+      <span id="control-hint">Pad, A/B, Start/Select.</span>
+      <strong id="save-profile">Guardado SRAM</strong>
+      <span id="save-hint">SRAM por slot.</span>
+
+      <form id="cheat-form">
+        <input id="cheat-address" type="text" />
+        <input id="cheat-value" type="text" />
+        <input id="cheat-label" type="text" />
+        <button id="add-cheat-btn" type="submit">Anadir cheat</button>
+      </form>
+      <div id="cheat-list"></div>
+      <span id="cheat-count-badge">0 activos</span>
+
+      <div class="attack-editor">
+        <input data-attack-index="0" type="text" maxlength="18" />
+        <input data-attack-index="1" type="text" maxlength="18" />
+        <input data-attack-index="2" type="text" maxlength="18" />
+        <input data-attack-index="3" type="text" maxlength="18" />
+      </div>
+
+      <div id="keymap-grid">
+        <button type="button" class="keymap-btn" data-keymap-action="up">Arriba</button>
+        <button type="button" class="keymap-btn" data-keymap-action="down">Abajo</button>
+        <button type="button" class="keymap-btn" data-keymap-action="left">Izquierda</button>
+        <button type="button" class="keymap-btn" data-keymap-action="right">Derecha</button>
+        <button type="button" class="keymap-btn" data-keymap-action="a">A</button>
+        <button type="button" class="keymap-btn" data-keymap-action="b">B</button>
+        <button type="button" class="keymap-btn" data-keymap-action="x">X</button>
+        <button type="button" class="keymap-btn" data-keymap-action="y">Y</button>
+        <button type="button" class="keymap-btn" data-keymap-action="start">Start</button>
+        <button type="button" class="keymap-btn" data-keymap-action="select">Select</button>
+        <button type="button" class="keymap-btn" data-keymap-action="l">L</button>
+        <button type="button" class="keymap-btn" data-keymap-action="r">R</button>
+      </div>
+
+      <div class="touch-controls" id="touch-controls">
+        <button type="button" class="touch-btn" data-button="up">up</button>
+        <button type="button" class="touch-btn" data-button="down">down</button>
+        <button type="button" class="touch-btn" data-button="left">left</button>
+        <button type="button" class="touch-btn" data-button="right">right</button>
+        <button type="button" class="touch-btn" data-button="a">a</button>
+        <button type="button" class="touch-btn" data-button="b">b</button>
+      </div>
+    </div>
+
+    <script src="./vendor/gameboy-online/js/other/base64.js"></script>
+    <script src="./vendor/gameboy-online/js/other/resampler.js"></script>
+    <script src="./vendor/gameboy-online/js/other/XAudioServer.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyCore.js"></script>
+    <script src="./vendor/gameboy-online/js/GameBoyIO.js"></script>
+    <script src="./vendor/gba-js/js/util.js"></script>
+    <script src="./vendor/gba-js/js/core.js"></script>
+    <script src="./vendor/gba-js/js/arm.js"></script>
+    <script src="./vendor/gba-js/js/thumb.js"></script>
+    <script src="./vendor/gba-js/js/mmu.js"></script>
+    <script src="./vendor/gba-js/js/io.js"></script>
+    <script src="./vendor/gba-js/js/audio.js"></script>
+    <script src="./vendor/gba-js/js/video.js"></script>
+    <script src="./vendor/gba-js/js/video/proxy.js"></script>
+    <script src="./vendor/gba-js/js/video/software.js"></script>
+    <script src="./vendor/gba-js/js/irq.js"></script>
+    <script src="./vendor/gba-js/js/keypad.js"></script>
+    <script src="./vendor/gba-js/js/sio.js"></script>
+    <script src="./vendor/gba-js/js/savedata.js"></script>
+    <script src="./vendor/gba-js/js/gpio.js"></script>
+    <script src="./vendor/gba-js/js/gba.js"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
+    <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
+    <script src="./src/app.js?v=20260313-page-system-fix"></script>
+  </body>
+</html>
