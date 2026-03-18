@@ -57,7 +57,6 @@ const defaultPrefs = {
   systemPreference: "auto",
   drawerOpen: false,
   focusMode: false,
-  startWithButton: false,
   overlayVisible: false,
   overlayContext: "battle-root",
   overlayAutoFollow: true,
@@ -191,7 +190,7 @@ const shellTemplates = {
 
           <div id="screen-wrap" class="screen-wrap">
             <canvas class="display" id="screen" width="160" height="144" aria-label="Pantalla Game Boy"></canvas>
-            <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+            <div id="screen-hint" class="screen-hint hidden"></div>
             <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
           </div>
 
@@ -251,7 +250,7 @@ const shellTemplates = {
             <div class="screen">
               <div id="screen-wrap" class="screen-wrap">
                 <canvas id="screen" width="240" height="160" aria-label="Pantalla Game Boy Advance"></canvas>
-                <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+                <div id="screen-hint" class="screen-hint hidden"></div>
                 <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
               </div>
             </div>
@@ -417,7 +416,7 @@ const shellTemplates = {
         <div id="screen-wrap" class="screen-wrap">
           <canvas id="screen" width="160" height="144"></canvas>
           <div id="ds-screens"></div>
-          <div id="screen-hint" class="screen-hint hidden">Presiona boton para iniciar</div>
+          <div id="screen-hint" class="screen-hint hidden"></div>
           <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
         </div>
         <button id="console-power-btn" type="button"></button>
@@ -721,7 +720,6 @@ function refreshElements() {
   elements.overlayOpacity = document.querySelector("#overlay-opacity");
   elements.volumeRange = document.querySelector("#volume-range");
   elements.scanlinesToggle = document.querySelector("#scanlines-toggle");
-  elements.startWithButtonToggle = document.querySelector("#start-with-button-toggle");
   elements.filterSelect = document.querySelector("#filter-select");
   elements.filterIntensity = document.querySelector("#filter-intensity");
   elements.touchControlsToggle = document.querySelector("#touch-controls-toggle");
@@ -1378,7 +1376,6 @@ function persistPrefs() {
     systemPreference: uiState.systemPreference,
     drawerOpen: uiState.drawerOpen,
     focusMode: uiState.focusMode,
-    startWithButton: uiState.startWithButton,
     overlayVisible: uiState.overlayVisible,
     overlayContext: uiState.overlayContext,
     overlayAutoFollow: uiState.overlayAutoFollow,
@@ -2613,7 +2610,6 @@ function syncFormState() {
   elements.overlayOpacity.value = String(uiState.overlayOpacity);
   elements.volumeRange.value = String(uiState.volume);
   elements.scanlinesToggle.checked = uiState.scanlines;
-  elements.startWithButtonToggle.checked = uiState.startWithButton;
   elements.filterSelect.value = uiState.filterMode;
   elements.filterIntensity.value = String(uiState.filterIntensity);
   elements.touchControlsToggle.checked = uiState.touchControls;
@@ -2684,15 +2680,12 @@ function getScreenHintText() {
     if (uiState.currentSystem === "ps1" && uiState.loadedRom && !hasDesktopBios("ps1")) {
       return "Carga BIOS PS1 para iniciar este juego";
     }
-    if (uiState.awaitingStart && desktopRuntime.pendingLaunch) {
-      return "Pulsa iniciar para abrir el core";
-    }
     if (!desktopRuntime.active && desktopRuntime.pendingLaunch) {
-      return "Core listo para arrancar";
+      return "Core listo";
     }
     return "";
   }
-  return uiState.awaitingStart && uiState.loadedRom ? "Presiona boton para iniciar" : "";
+  return "";
 }
 
 function renderKeymapButtons() {
@@ -3425,13 +3418,6 @@ async function loadDesktopRom(file, system, meta = {}) {
     return;
   }
 
-  if (uiState.startWithButton) {
-    uiState.awaitingStart = true;
-    updateStatus(`ROM ${DESKTOP_CORE_CONFIG[system].label} lista. Pulsa iniciar para abrir el core.`);
-    renderStatePanel();
-    return;
-  }
-
   await startDesktopRuntime({ system, file, assetUrls: meta.assetUrls || [] });
   updateStatus(`Core ${DESKTOP_CORE_CONFIG[system].label} inicializado con EmulatorJS.`);
   renderStatePanel();
@@ -3654,7 +3640,7 @@ window.render_game_to_text = function () {
       origin: { x: 0, y: 0, note: "origen superior izquierdo, y crece hacia abajo" },
       rom: uiState.loadedRom,
       startFlow: {
-        enabled: uiState.startWithButton,
+        enabled: false,
         awaitingStart: uiState.awaitingStart,
       },
       visual: {
@@ -4054,16 +4040,6 @@ elements.filterSelect.addEventListener("change", (event) => {
 
 elements.filterIntensity.addEventListener("input", (event) => {
   uiState.filterIntensity = Number(event.target.value);
-  persistAndRender();
-});
-
-elements.startWithButtonToggle.addEventListener("change", (event) => {
-  uiState.startWithButton = event.target.checked;
-  if (!uiState.startWithButton && uiState.awaitingStart) {
-    uiState.awaitingStart = false;
-    startCurrentEmulator();
-    updateStatus("Arranque automatico activado. La ROM inicio de inmediato.");
-  }
   persistAndRender();
 });
 
