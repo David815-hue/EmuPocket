@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "serve": "python -m http.server 4173",
+    "serve": "node server.js",
     "test": "echo \"No automated test script configured\""
   },
   "keywords": [],

@@ -13,6 +13,11 @@
   --overlay-alpha: 0.92;
   --drawer-width: min(420px, calc(100vw - 26px));
   --filter-intensity: 0.55;
+  --system-glow-1: rgba(54, 123, 112, 0.16);
+  --system-glow-2: rgba(239, 125, 87, 0.14);
+  --system-chip-bg: rgba(255, 255, 255, 0.72);
+  --system-chip-stroke: rgba(23, 32, 39, 0.08);
+  --system-card-bg: rgba(255, 255, 255, 0.42);
 }
 
 body[data-theme="sunset"] {
@@ -43,11 +48,55 @@ body {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   color: var(--ink);
   background:
+    radial-gradient(circle at 18% 18%, var(--system-glow-1) 0%, transparent 28%),
+    radial-gradient(circle at 78% 30%, var(--system-glow-2) 0%, transparent 34%),
     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 40%),
     linear-gradient(135deg, var(--bg), var(--bg-accent));
   background-attachment: fixed;
   transition: background 0.6s ease, color 0.6s ease;
+}
+
+body[data-system="gbc"] {
+  --system-glow-1: rgba(56, 116, 92, 0.18);
+  --system-glow-2: rgba(232, 176, 92, 0.14);
+  --system-chip-bg: rgba(224, 242, 212, 0.72);
+}
+
+body[data-system="gba"] {
+  --system-glow-1: rgba(80, 89, 188, 0.2);
+  --system-glow-2: rgba(151, 111, 220, 0.16);
+  --system-chip-bg: rgba(225, 221, 255, 0.72);
+}
+
+body[data-system="ds"] {
+  --system-glow-1: rgba(72, 82, 98, 0.18);
+  --system-glow-2: rgba(136, 156, 177, 0.16);
+  --system-chip-bg: rgba(235, 239, 244, 0.78);
+}
+
+body[data-system="snes"] {
+  --system-glow-1: rgba(136, 124, 192, 0.2);
+  --system-glow-2: rgba(188, 156, 208, 0.18);
+  --system-chip-bg: rgba(239, 233, 255, 0.76);
+}
+
+body[data-system="n64"] {
+  --system-glow-1: rgba(53, 114, 84, 0.2);
+  --system-glow-2: rgba(231, 189, 61, 0.18);
+  --system-chip-bg: rgba(231, 245, 235, 0.74);
+}
+
+body[data-system="ps1"] {
+  --system-glow-1: rgba(210, 88, 74, 0.2);
+  --system-glow-2: rgba(79, 113, 201, 0.14);
+  --system-chip-bg: rgba(247, 233, 230, 0.78);
+}
+
+body[data-system="psp"] {
+  --system-glow-1: rgba(170, 184, 224, 0.2);
+  --system-glow-2: rgba(120, 145, 211, 0.18);
+  --system-chip-bg: rgba(242, 245, 250, 0.76);
 }
 
 body.focus-mode {
@@ -232,6 +281,51 @@ body.focus-mode .app-header {
   margin: 10px 0 0;
 }
 
+.onboarding-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.onboarding-card {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--system-card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.onboarding-card strong,
+.onboarding-card span {
+  display: block;
+}
+
+.onboarding-card strong {
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.onboarding-card span {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.onboarding-card.is-active {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.54);
+}
+
+.onboarding-card.is-done {
+  background: color-mix(in srgb, var(--system-chip-bg) 78%, white);
+  border-color: rgba(74, 121, 103, 0.18);
+}
+
 .quick-actions,
 .quick-strip,
 .panel-actions,
@@ -262,7 +356,7 @@ body.focus-mode .app-header {
 
 .quick-strip button {
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--system-chip-bg);
   color: var(--ink);
   box-shadow: none;
 }
@@ -306,7 +400,7 @@ body.focus-mode .app-header {
 }
 
 .console-stage {
-  width: min(920px, 100%);
+  width: min(1120px, 100%);
   position: relative;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
   z-index: 10;
@@ -400,6 +494,13 @@ body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc(10
 body.focus-mode[data-system="snes"] .console-stage,
 body.focus-mode[data-system="n64"] .console-stage,
 body.focus-mode[data-system="ps1"] .console-stage { transform: scale(min(calc(100vh / 720), calc(100vw / 980))); }
+body.focus-mode[data-system="psp"] .console-stage { transform: scale(min(calc(100vh / 760), calc(100vw / 1120))); }
+
+body.focus-mode[data-system="psp"] .console-shell-host {
+  min-height: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
 
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .topbody,
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .midbar,
@@ -438,15 +539,131 @@ body.focus-mode .console-dock {
 }
 
 .console-shell.system-shell--desktop {
-  width: min(980px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+.console-shell.system-shell--handheld {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.psp-rig {
+  width: min(1040px, 100%);
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 3vw, 26px);
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.28), transparent 24%),
+    linear-gradient(180deg, #111621, #1c2230 48%, #0c1018);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 34px 64px rgba(7, 11, 17, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.psp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #f1f3fa;
+}
+
+.psp-branding h3,
+.psp-kicker {
+  margin: 0;
+}
+
+.psp-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.psp-branding h3 {
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.psp-badge {
+  color: #ecf1ff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(116, 129, 160, 0.2));
+}
+
+.psp-body {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: clamp(20px, 2.5vw, 26px) clamp(18px, 3vw, 30px) 22px;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(43, 50, 69, 0.98), rgba(17, 20, 28, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.psp-shoulder {
+  position: absolute;
+  top: -8px;
+  width: 160px;
+  height: 28px;
+  border-radius: 20px 20px 8px 8px;
+  background: linear-gradient(180deg, rgba(86, 92, 111, 0.88), rgba(17, 21, 30, 0.82));
+}
+
+.psp-shoulder--left { left: 32px; }
+.psp-shoulder--right { right: 32px; }
+
+.psp-screen-chamber {
+  display: grid;
+  gap: 10px;
+}
+
+.desktop-screen-wrap--psp {
+  max-width: 100%;
+  aspect-ratio: 480 / 272;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top, rgba(220, 235, 255, 0.09), transparent 40%),
+    linear-gradient(180deg, rgba(22, 26, 35, 0.68), rgba(2, 4, 9, 0.96));
+  border: 1px solid rgba(165, 176, 205, 0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 40px rgba(0, 0, 0, 0.46),
+    0 20px 38px rgba(0, 0, 0, 0.24);
+}
+
+.psp-marquee {
+  color: #aeb8d0;
+}
+
+.psp-bottom-details {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.psp-bottom-details span {
+  width: 58px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(186, 195, 218, 0.24), rgba(64, 71, 90, 0.4));
+}
+
+.psp-power {
+  justify-self: end;
+}
+
 .desktop-rig {
-  width: min(920px, 100%);
+  width: min(1020px, 100%);
   display: grid;
   gap: 20px;
   padding: clamp(18px, 3vw, 28px);
@@ -464,14 +681,14 @@ body.focus-mode .console-dock {
 
 .desktop-rig--snes {
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 32%),
-    linear-gradient(150deg, #4d4759, #2d3346 52%, #181d29);
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(160deg, #cbc8c7, #a9a7aa 48%, #85838a);
 }
 
 .desktop-rig--n64 {
   background:
-    radial-gradient(circle at 15% 15%, rgba(182, 255, 201, 0.16), transparent 28%),
-    linear-gradient(150deg, #244341, #27354e 50%, #181b29);
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(155deg, #5f6462, #40484b 52%, #262c30);
 }
 
 .desktop-rig--ps1 {
@@ -490,6 +707,32 @@ body.focus-mode .console-dock {
   gap: 16px;
 }
 
+.desktop-hero-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.desktop-hero-strip span {
+  height: 8px;
+  border-radius: 999px;
+  opacity: 0.95;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.desktop-hero-strip--snes span:nth-child(1) { background: linear-gradient(90deg, #a44dff, #7d59d8); }
+.desktop-hero-strip--snes span:nth-child(2) { background: linear-gradient(90deg, #5568ff, #697ce9); }
+.desktop-hero-strip--snes span:nth-child(3) { background: linear-gradient(90deg, #db5da5, #bb6ac9); }
+.desktop-hero-strip--snes span:nth-child(4) { background: linear-gradient(90deg, #7b7f90, #a3a8b5); }
+.desktop-hero-strip--n64 span:nth-child(1) { background: linear-gradient(90deg, #33c770, #2f9a6f); }
+.desktop-hero-strip--n64 span:nth-child(2) { background: linear-gradient(90deg, #2d72ff, #244ccd); }
+.desktop-hero-strip--n64 span:nth-child(3) { background: linear-gradient(90deg, #f2c036, #da8f00); }
+.desktop-hero-strip--n64 span:nth-child(4) { background: linear-gradient(90deg, #df4d53, #b72a36); }
+.desktop-hero-strip--ps1 span:nth-child(1) { background: linear-gradient(90deg, #d94a3b, #e07643); }
+.desktop-hero-strip--ps1 span:nth-child(2) { background: linear-gradient(90deg, #d1b49a, #efe1c9); }
+.desktop-hero-strip--ps1 span:nth-child(3) { background: linear-gradient(90deg, #495fda, #7684ff); }
+.desktop-hero-strip--ps1 span:nth-child(4) { background: linear-gradient(90deg, #2a8e72, #58b69a); }
+
 .desktop-header h3,
 .desktop-kicker {
   margin: 0;
@@ -499,6 +742,77 @@ body.focus-mode .console-dock {
   font-size: clamp(1.6rem, 3vw, 2.45rem);
   line-height: 0.95;
   letter-spacing: -0.04em;
+}
+
+.ps-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ps-mark {
+  position: relative;
+  width: 38px;
+  height: 40px;
+  display: inline-block;
+}
+
+.ps-mark-p {
+  position: absolute;
+  left: 11px;
+  top: 0;
+  width: 12px;
+  height: 34px;
+  border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(180deg, #db4a3d, #bf342d);
+}
+
+.ps-mark-p::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 0;
+  width: 22px;
+  height: 16px;
+  border-radius: 14px 14px 10px 10px;
+  border: 8px solid #db4a3d;
+  border-left-width: 10px;
+  border-bottom-width: 7px;
+  border-color: #db4a3d #db4a3d transparent #db4a3d;
+  box-sizing: border-box;
+}
+
+.ps-mark-s {
+  position: absolute;
+  left: 2px;
+  bottom: 1px;
+  width: 34px;
+  height: 14px;
+}
+
+.ps-mark-s::before,
+.ps-mark-s::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 60%, 24% 14%, 58% 14%, 36% 60%, 100% 60%, 78% 100%, 0 100%);
+}
+
+.ps-mark-s::before {
+  background: linear-gradient(90deg, #f2c13f, #2e8d6e);
+}
+
+.ps-mark-s::after {
+  background: linear-gradient(90deg, rgba(72, 97, 214, 0.94), rgba(242, 193, 63, 0));
+  opacity: 0.92;
+}
+
+.ps-word {
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  line-height: 1;
+  color: #4a4d55;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .desktop-kicker {
@@ -526,12 +840,141 @@ body.focus-mode .console-dock {
   position: relative;
   display: grid;
   gap: 14px;
-  padding: clamp(18px, 3vw, 24px);
+  padding: clamp(14px, 2vw, 20px);
   border-radius: 28px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(5, 8, 12, 0.18)),
     rgba(8, 12, 18, 0.64);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desktop-console-sculpt {
+  position: relative;
+  height: 58px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(5, 10, 14, 0.18));
+}
+
+.desktop-console-sculpt--snes {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(126, 125, 132, 0.34)),
+    linear-gradient(90deg, rgba(236, 235, 238, 0.34), rgba(126, 124, 132, 0.18));
+  border-color: rgba(84, 82, 93, 0.16);
+}
+
+.snes-ridge {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 28%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(208, 206, 221, 0.78), rgba(126, 124, 146, 0.4));
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), inset 0 -2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.snes-ridge--left { left: 16px; }
+.snes-ridge--right { right: 16px; }
+
+.desktop-console-sculpt--n64 {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(104, 110, 108, 0.88), rgba(43, 50, 54, 0.72));
+}
+
+.snes-switches,
+.n64-switches {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.snes-switches span,
+.n64-switches span {
+  min-width: 48px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.snes-switches span {
+  background: linear-gradient(180deg, #8b79b8, #69558f);
+  color: #f0eaff;
+}
+
+.n64-switches span {
+  background: linear-gradient(180deg, #d8d9d8, #888e8d);
+  color: #1d2426;
+}
+
+.n64-cart-slot {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 120px;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(180deg, rgba(26, 30, 32, 0.75), rgba(70, 77, 81, 0.38));
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.32);
+}
+
+.n64-jewel {
+  position: absolute;
+  inset: 8px auto auto 50%;
+  width: 68px;
+  height: 68px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 18px;
+  background: rgba(15, 22, 24, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 18px rgba(0, 0, 0, 0.2);
+}
+
+.n64-jewel span {
+  position: absolute;
+  inset: 50%;
+  width: 28px;
+  height: 28px;
+  transform-origin: center;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.n64-jewel span:nth-child(1) { background: #2bc866; transform: translate(-50%, -86%) rotate(-45deg); }
+.n64-jewel span:nth-child(2) { background: #dc4448; transform: translate(-14%, -50%) rotate(45deg); }
+.n64-jewel span:nth-child(3) { background: #f0bd32; transform: translate(-50%, -14%) rotate(135deg); }
+.n64-jewel span:nth-child(4) { background: #3d74ff; transform: translate(-86%, -50%) rotate(225deg); }
+
+.desktop-console-sculpt--ps1 {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(133, 136, 141, 0.46)),
+    linear-gradient(90deg, rgba(245, 241, 233, 0.32), rgba(109, 114, 120, 0.26));
+}
+
+.ps1-disc-lid {
+  position: absolute;
+  inset: 7px auto auto 50%;
+  width: 108px;
+  height: 44px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(238, 237, 231, 0.9), rgba(161, 163, 167, 0.56));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.14);
+}
+
+.ps1-disc-ring {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 3px solid rgba(102, 108, 116, 0.46);
 }
 
 .desktop-leds {
@@ -554,8 +997,9 @@ body.focus-mode .console-dock {
 
 .desktop-screen-wrap {
   width: 100%;
-  max-width: 760px;
+  max-width: 920px;
   margin: 0 auto;
+  padding: 0;
   aspect-ratio: 256 / 224;
   border-radius: 24px;
   overflow: hidden;
@@ -567,6 +1011,715 @@ body.focus-mode .console-dock {
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 0 34px rgba(0, 0, 0, 0.4),
     0 18px 28px rgba(0, 0, 0, 0.22);
+}
+
+body[data-system="snes"] .desktop-screen-wrap,
+body[data-system="n64"] .desktop-screen-wrap,
+body[data-system="ps1"] .desktop-screen-wrap {
+  width: 100%;
+  padding: 0;
+}
+
+body[data-system="psp"] .desktop-screen-wrap {
+  width: 100%;
+  padding: 0;
+  max-width: 100%;
+  aspect-ratio: 480 / 272;
+}
+
+.console-shell.system-shell--psp {
+  --psp-shell-scale: 1.48;
+  --psp-shell-width: 643px;
+  --psp-shell-height: 268px;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.console-shell.system-shell--psp .psp-3000 {
+  width: var(--psp-shell-width);
+  height: var(--psp-shell-height);
+  background-color: #fbfbf9;
+  color: #fff;
+  margin: 0 auto;
+  border-radius: 10%/50%;
+  position: relative;
+  transform: scale(var(--psp-shell-scale));
+  transform-origin: center center;
+  box-shadow:
+    -1px 1px 0 0 #c8c8ad,
+    -1.5px 1.5px 0 0 #d2d2bc,
+    -2px 2px 0 0 #d2d2bc,
+    1px 1px 0 0 #c8c8ad,
+    1.5px 1.5px 0 0 #d2d2bc,
+    2px 2px 0 0 #d2d2bc,
+    2.5px 2.5px 0 0 #d2d2bc,
+    3px 3px 0 0 #d2d2bc;
+}
+
+.console-shell.system-shell--psp .psp-inner {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+}
+
+.console-shell.system-shell--psp .controls,
+.console-shell.system-shell--psp .controls--left,
+.console-shell.system-shell--psp .controls--right,
+.console-shell.system-shell--psp .controls--bottom {
+  z-index: 6;
+}
+
+.console-shell.system-shell--psp .psp-shoulder-btn {
+  position: absolute;
+  top: -16px;
+  width: 78px;
+  height: 16px;
+  padding: 0;
+  border-radius: 12px 12px 4px 4px;
+  background: linear-gradient(180deg, #d8d7cf, #8e8f95);
+  border: 1px solid rgba(108, 112, 124, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 0 rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .psp-shoulder-btn--left {
+  left: 66px;
+}
+
+.console-shell.system-shell--psp .psp-shoulder-btn--right {
+  right: 66px;
+}
+
+.console-shell.system-shell--psp .psp-shoulder-btn::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #5f6570;
+}
+
+.console-shell.system-shell--psp .psp-shoulder-btn--left::after { content: "L"; }
+.console-shell.system-shell--psp .psp-shoulder-btn--right::after { content: "R"; }
+
+.console-shell.system-shell--psp .shadow {
+  border-radius: 50%;
+  width: 100%;
+  height: 100px;
+  background: rgba(251, 251, 249, 0.2);
+  opacity: 0.26;
+  filter: blur(30px);
+  transform: scale(1, 0.2);
+  position: absolute;
+  bottom: -116px;
+}
+
+.console-shell.system-shell--psp .oval-half {
+  width: 70px;
+  height: 20px;
+  position: absolute;
+}
+
+.console-shell.system-shell--psp .oval-half--top-left {
+  background-color: #f1f1ea;
+  box-shadow: -1px -1px 0 0 rgba(204, 204, 204, 0.8) inset;
+  top: -21px;
+  left: 30px;
+  border-radius: 60% 0/150% 0;
+}
+
+.console-shell.system-shell--psp .oval-half--top-right {
+  background-color: #f1f1ea;
+  box-shadow: 1px -1px 0 0 rgba(204, 204, 204, 0.8) inset;
+  top: -21px;
+  right: 30px;
+  border-radius: 0 60%/0 150%;
+}
+
+.console-shell.system-shell--psp .oval-half--bottom-left {
+  background-color: #e7e7da;
+  box-shadow: -1px 1px 0 0 rgba(204, 204, 204, 0.8) inset;
+  bottom: 0;
+  left: 33px;
+  border-radius: 0 60%/0 150%;
+}
+
+.console-shell.system-shell--psp .oval-half--bottom-left::before {
+  content: "";
+  width: 45px;
+  height: 10px;
+  background-color: #111;
+  border-radius: 0 60%/0 150%;
+  position: absolute;
+  bottom: 5px;
+  left: 12px;
+}
+
+.console-shell.system-shell--psp .oval-half--bottom-right {
+  width: 75px;
+  height: 25px;
+  background-color: #111;
+  box-shadow:
+    1px 1px 0 0 rgba(204, 204, 204, 0.8) inset,
+    2px 2px 0 0 rgba(204, 204, 204, 0.8) inset,
+    3px 3px 0 0 rgba(204, 204, 204, 0.8) inset,
+    -10px -1px 0 0 #111 inset;
+  bottom: -4px;
+  right: 25px;
+  border-radius: 60% 0/150% 0;
+}
+
+.console-shell.system-shell--psp .psp-side-switch {
+  position: absolute;
+  top: 165px;
+  right: 3px;
+  z-index: 40;
+  width: 4px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #e7e7da;
+  box-shadow: 1px 1px 0 0 #868a95 inset;
+  transform: rotate(14deg);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    top 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .psp-side-switch::after {
+  content: "Off/On";
+  color: #a1a4ad;
+  margin-left: 10px;
+  font-size: 10px;
+}
+
+.console-shell.system-shell--psp .psp-side-switch.ready,
+.console-shell.system-shell--psp .psp-side-switch.active {
+  top: 160px;
+  right: 1.8px;
+}
+
+.console-shell.system-shell--psp .display {
+  width: 412px;
+  height: 206px;
+  background-color: #111;
+  float: left;
+  overflow: hidden;
+  position: relative;
+}
+
+.console-shell.system-shell--psp .display::before {
+  content: "";
+  display: block;
+  width: 412px;
+  height: 206px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  box-shadow:
+    1px 1px 0 0 #868a95 inset,
+    1.5px 1.5px 0 0 #868a95 inset,
+    -1px -1px 0 0 #868a95 inset,
+    -1.5px -1.5px 0 0 #868a95 inset;
+  z-index: 20;
+  position: relative;
+  pointer-events: none;
+}
+
+.console-shell.system-shell--psp .psp-display-wrap {
+  width: 412px;
+  height: 206px;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: #111;
+  box-shadow: none;
+}
+
+.console-shell.system-shell--psp .psp-display-wrap::after {
+  inset: 0;
+  border-radius: 0;
+}
+
+.console-shell.system-shell--psp .psp-display-wrap #screen {
+  width: 412px;
+  height: 206px;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
+.console-shell.system-shell--psp .speaker {
+  width: 20px;
+  height: 10px;
+  background-color: #222;
+  border-radius: 40px;
+  box-shadow: 0 0 1px 0 #444 inset, 1px 1px 0 0 #ccc inset, -1px 0 0 0 #ccc inset;
+}
+
+.console-shell.system-shell--psp .controls {
+  position: relative;
+}
+
+.console-shell.system-shell--psp .controls--left,
+.console-shell.system-shell--psp .controls--right {
+  width: 115px;
+  height: 206px;
+  float: left;
+  position: relative;
+  color: #a1a4ad;
+}
+
+.console-shell.system-shell--psp .controls--left .sony {
+  text-align: right;
+  margin-top: 10px;
+  margin-right: 20px;
+  margin-bottom: 5px;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  color: #a1a4ad;
+}
+
+.console-shell.system-shell--psp .controls--left .speaker--left {
+  margin-left: auto;
+  margin-right: 20px;
+}
+
+.console-shell.system-shell--psp .d-pad,
+.console-shell.system-shell--psp .d-buttons {
+  width: 90px;
+  height: 90px;
+  background-color: #f7f7f3;
+  border: 2px solid #b5b5b5;
+  border-radius: 50%;
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.console-shell.system-shell--psp .btn-direction {
+  appearance: none;
+  width: 25px;
+  height: 30px;
+  padding: 0;
+  background-color: #f1f1ea;
+  border: 1px solid rgba(34, 34, 34, 0.3);
+  position: absolute;
+  clip-path: polygon(100% 10%, 0 10%, 0 68%, 30% 100%, 70% 100%, 100% 70%);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 115ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .btn-direction::before {
+  content: "";
+  width: 25px;
+  height: 30px;
+  background-color: rgba(161, 164, 173, 0.6);
+  border: 1px solid rgba(68, 68, 68, 0.3);
+  clip-path: polygon(50% 76%, 20% 100%, 80% 100%);
+  position: absolute;
+  bottom: 15px;
+}
+
+.console-shell.system-shell--psp .d-pad .up {
+  top: -2px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.console-shell.system-shell--psp .d-pad .right {
+  top: 50%;
+  right: 0;
+  transform: translate(0, -50%) rotate(90deg);
+}
+
+.console-shell.system-shell--psp .d-pad .down {
+  bottom: -2px;
+  left: 50%;
+  transform: translate(-50%, 0) rotate(180deg);
+}
+
+.console-shell.system-shell--psp .d-pad .left {
+  top: 50%;
+  left: 0;
+  transform: translate(0, -50%) rotate(-90deg);
+}
+
+.console-shell.system-shell--psp .analog-stick {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ccc;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .analog-stick.is-active {
+  border-color: rgba(94, 126, 210, 0.46);
+  box-shadow: 0 0 0 3px rgba(93, 120, 202, 0.14), 0 8px 18px rgba(38, 53, 102, 0.16);
+  cursor: grabbing;
+}
+
+.console-shell.system-shell--psp .analog-stick .stick {
+  width: 40px;
+  height: 40px;
+  background-color: #f1f1ea;
+  border-radius: 50%;
+  box-shadow: -0.5px 0 0 0 #60646e, 0.5px 0.5px 0 0 #60646e, 1px 1px 0 0 #6c707c;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .analog-stick .stick::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  background-image: radial-gradient(rgba(204, 204, 204, 0.3) 25%, transparent 25%);
+  background-size: 3px 3px;
+}
+
+.console-shell.system-shell--psp .indicator {
+  display: flex;
+  align-items: center;
+}
+
+.console-shell.system-shell--psp .controls--left .indicator--memory {
+  position: absolute;
+  left: 8px;
+  bottom: 40px;
+}
+
+.console-shell.system-shell--psp .controls--left .indicator--wifi {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+}
+
+.console-shell.system-shell--psp .icon-memory,
+.console-shell.system-shell--psp .icon-wifi {
+  width: 12px;
+  height: 10px;
+  position: absolute;
+  bottom: 1px;
+  left: 10px;
+}
+
+.console-shell.system-shell--psp .icon-memory::before,
+.console-shell.system-shell--psp .icon-wifi::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #a1a4ad;
+  border-radius: 2px;
+}
+
+.console-shell.system-shell--psp .icon-wifi {
+  left: 8px;
+}
+
+.console-shell.system-shell--psp .icon-wifi::before {
+  border: 0;
+  border-top: 1px solid #a1a4ad;
+  border-radius: 50% 50% 0 0;
+  transform: scale(1, 0.9);
+}
+
+.console-shell.system-shell--psp .controls--right .speaker--right {
+  margin-left: 20px;
+  margin-top: 33px;
+}
+
+.console-shell.system-shell--psp .btn-play {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 0.5px solid rgba(108, 112, 124, 0.3);
+  background-color: #f1f1ea;
+  position: absolute;
+  box-shadow: 0 0 0.5px 0 #60646e;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .btn-play::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.console-shell.system-shell--psp .btn-triangle {
+  top: -10px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.console-shell.system-shell--psp .btn-triangle::after { content: "△"; color: #77a96c; }
+
+.console-shell.system-shell--psp .btn-circle {
+  top: 50%;
+  right: -10px;
+  transform: translate(0, -50%);
+}
+
+.console-shell.system-shell--psp .btn-circle::after { content: "○"; color: #d26855; }
+
+.console-shell.system-shell--psp .btn-cross {
+  left: 50%;
+  bottom: -10px;
+  transform: translate(-50%, 0);
+}
+
+.console-shell.system-shell--psp .btn-cross::after { content: "✕"; color: #5d78ca; }
+
+.console-shell.system-shell--psp .btn-square {
+  left: -10px;
+  top: 50%;
+  transform: translate(0, -50%);
+}
+
+.console-shell.system-shell--psp .btn-square::after { content: "□"; color: #d88ac6; }
+
+.console-shell.system-shell--psp .controls--right .indicator--power {
+  position: absolute;
+  right: 8px;
+  bottom: 40px;
+}
+
+.console-shell.system-shell--psp .controls--right .indicator--hold {
+  position: absolute;
+  right: 15px;
+  bottom: 15px;
+}
+
+.console-shell.system-shell--psp .power,
+.console-shell.system-shell--psp .hold {
+  margin-right: 5px;
+  font-size: 0.5rem;
+  color: #a1a4ad;
+}
+
+.console-shell.system-shell--psp .led {
+  width: 6px;
+  height: 6px;
+  background-color: #222;
+  border-radius: 50%;
+  box-shadow: 0 0 0.5px 0 #ccc inset, 1px 1px 0 0 #ccc inset, -1px 0 0 0 #ccc inset;
+  transition: all 1s;
+}
+
+.console-shell.system-shell--psp.is-on .led--power {
+  background-color: #34bf49;
+  box-shadow: 0 0 9px 2px rgba(52, 191, 73, 0.3), 0 0 0.5px 0 #ccc inset, 1px 1px 0 0 #ccc inset;
+}
+
+.console-shell.system-shell--psp.is-on .led--memory {
+  background-color: #f47721;
+  box-shadow: 0 0 9px 2px rgba(244, 119, 33, 0.3), 0 0 0.5px 0 #ccc inset, 1px 1px 0 0 #ccc inset;
+}
+
+.console-shell.system-shell--psp.is-on .led--wifi {
+  background-color: #34bf49;
+  box-shadow: 0 0 9px 2px rgba(52, 191, 73, 0.3), 0 0 0.5px 0 #ccc inset, 1px 1px 0 0 #ccc inset;
+}
+
+.console-shell.system-shell--psp .controls--bottom {
+  width: 67%;
+  height: 42px;
+  margin: 0 auto;
+  clear: both;
+  font-size: 0.5rem;
+}
+
+.console-shell.system-shell--psp .d-option,
+.console-shell.system-shell--psp .btn-vol-group,
+.console-shell.system-shell--psp .btn-group-display-sound {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-shell.system-shell--psp .d-option {
+  height: 42px;
+}
+
+.console-shell.system-shell--psp .btn-option {
+  appearance: none;
+  border: 1px solid rgba(108, 112, 124, 0.3);
+  border-radius: 30%/70%;
+  width: 40px;
+  height: 20px;
+  padding: 0;
+  color: #a1a4ad;
+  box-shadow: -0.5px 0 0 0 #60646e, 0.5px 0.5px 0 0 #60646e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.console-shell.system-shell--psp .btn-home::after { content: "PS"; font-size: 11px; }
+.console-shell.system-shell--psp .btn-display::after { content: "▭"; font-size: 11px; }
+.console-shell.system-shell--psp .btn-sound::after { content: "♪"; font-size: 11px; }
+.console-shell.system-shell--psp .btn-vol--minus::after { content: "−"; font-size: 13px; }
+.console-shell.system-shell--psp .btn-vol--plus::after { content: "+"; font-size: 13px; }
+
+.console-shell.system-shell--psp .btn-vol {
+  width: 18px;
+  height: 13px;
+  border-radius: 40%/80%;
+}
+
+.console-shell.system-shell--psp .vol {
+  color: #a1a4ad;
+  margin: 0 3px;
+  font-weight: 700;
+}
+
+.console-shell.system-shell--psp .microphone {
+  width: 12px;
+  height: 7px;
+  background-color: #222;
+  box-shadow: 0 0 1px 0 #444 inset, 1px 1px 0 0 #ccc inset, -1px 0 0 0 #ccc inset;
+  border-radius: 10px;
+}
+
+.console-shell.system-shell--psp .psp-wordmark {
+  width: 90px;
+  text-align: center;
+  color: #a1a4ad;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+}
+
+.console-shell.system-shell--psp .btn-select,
+.console-shell.system-shell--psp .btn-start {
+  font-weight: 700;
+}
+
+.console-shell.system-shell--psp .btn-direction.is-pressed,
+.console-shell.system-shell--psp .btn-play.is-pressed,
+.console-shell.system-shell--psp .btn-option.is-pressed,
+.console-shell.system-shell--psp .psp-shoulder-btn.is-pressed,
+.console-shell.system-shell--psp .psp-side-switch.is-pressed {
+  filter: saturate(1.06) brightness(0.98);
+}
+
+.console-shell.system-shell--psp .btn-direction.is-pressed {
+  box-shadow: inset 0 1px 4px rgba(44, 47, 55, 0.18);
+}
+
+.console-shell.system-shell--psp .btn-play.is-pressed {
+  box-shadow: inset 0 2px 5px rgba(44, 47, 55, 0.16), 0 0 0.5px 0 #60646e;
+}
+
+.console-shell.system-shell--psp .btn-option.is-pressed {
+  background: rgba(208, 214, 226, 0.18);
+  box-shadow: inset 0 1px 5px rgba(44, 47, 55, 0.14), -0.5px 0 0 0 #60646e, 0.5px 0.5px 0 0 #60646e;
+}
+
+.console-shell.system-shell--psp .analog-stick.is-active .stick {
+  box-shadow:
+    inset 0 2px 6px rgba(71, 78, 96, 0.16),
+    -0.5px 0 0 0 #60646e,
+    0.5px 0.5px 0 0 #60646e,
+    0 6px 16px rgba(51, 62, 97, 0.12);
+  filter: brightness(1.02);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .console-shell.system-shell--psp .btn-direction:hover,
+  .console-shell.system-shell--psp .btn-play:hover,
+  .console-shell.system-shell--psp .btn-option:hover,
+  .console-shell.system-shell--psp .psp-shoulder-btn:hover,
+  .console-shell.system-shell--psp .psp-side-switch:hover {
+    filter: brightness(1.02);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.62),
+      0 3px 8px rgba(51, 57, 72, 0.14);
+  }
+
+  .console-shell.system-shell--psp .analog-stick:hover {
+    box-shadow: 0 0 0 3px rgba(93, 120, 202, 0.08), 0 6px 14px rgba(38, 53, 102, 0.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-shell.system-shell--psp .psp-shoulder-btn,
+  .console-shell.system-shell--psp .psp-side-switch,
+  .console-shell.system-shell--psp .btn-direction,
+  .console-shell.system-shell--psp .analog-stick,
+  .console-shell.system-shell--psp .analog-stick .stick,
+  .console-shell.system-shell--psp .btn-play,
+  .console-shell.system-shell--psp .btn-option {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body[data-system="psp"] .console-shell-host {
+  min-height: calc((268px * 1.48) + 48px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body.focus-mode[data-system="psp"] .console-shell.system-shell--psp {
+  display: flex;
+  justify-content: center;
 }
 
 .desktop-emulator-frame {
@@ -583,13 +1736,14 @@ body.focus-mode .console-dock {
 }
 
 body[data-system="snes"] .desktop-screen-wrap {
-  max-width: 820px;
+  max-width: 980px;
   transform: perspective(1200px) rotateX(1.2deg);
+  border-radius: 28px 28px 22px 22px;
 }
 
 body[data-system="n64"] .desktop-screen-wrap,
 body[data-system="ps1"] .desktop-screen-wrap {
-  max-width: 840px;
+  max-width: 1000px;
   transform: perspective(1200px) rotateX(1.2deg);
 }
 
@@ -603,6 +1757,16 @@ body[data-system="ps1"] #screen {
   background:
     radial-gradient(circle at center, rgba(171, 229, 172, 0.12), transparent 50%),
     linear-gradient(180deg, #1a241d, #0c110f);
+}
+
+body[data-system="psp"] #screen {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 480 / 272;
+  display: block;
+  background:
+    radial-gradient(circle at center, rgba(171, 205, 255, 0.08), transparent 54%),
+    linear-gradient(180deg, #111723, #05070c);
 }
 
 .desktop-marquee,
@@ -619,11 +1783,22 @@ body[data-system="ps1"] #screen {
 }
 
 .desktop-slot {
+  position: relative;
   width: 96px;
   height: 18px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.42);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.desktop-slot-label {
+  position: absolute;
+  inset: auto auto -20px 50%;
+  transform: translateX(-50%);
+  font-size: 0.54rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.68;
 }
 
 .desktop-slot--disc {
@@ -652,21 +1827,104 @@ body[data-system="ps1"] #screen {
   box-shadow: 0 0 0 2px rgba(255, 190, 96, 0.18), 0 0 22px rgba(255, 190, 96, 0.24);
 }
 
+.desktop-port-bank,
+.desktop-memory-bays {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.desktop-port-bank span {
+  width: 32px;
+  height: 22px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, rgba(16, 25, 26, 0.48), rgba(0, 0, 0, 0.4));
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.24);
+}
+
+.desktop-memory-bays span {
+  min-width: 110px;
+  padding: 7px 10px;
+  border-radius: 12px 12px 6px 6px;
+  background: linear-gradient(180deg, rgba(240, 238, 232, 0.88), rgba(181, 182, 184, 0.58));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+
+.ps1-front-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ps1-front-buttons span {
+  min-width: 64px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(235, 232, 224, 0.9), rgba(185, 186, 190, 0.56));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 body[data-system="ps1"] .desktop-rig,
 body[data-system="ps1"] .desktop-screen-board {
   color: #17181d;
 }
 
+body[data-system="ps1"] .desktop-rig {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.42), transparent 24%),
+    linear-gradient(180deg, #d7d2c8, #b3b1ae 46%, #8c8d8f 100%);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 30px 60px rgba(52, 55, 60, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(88, 90, 96, 0.22);
+}
+
 body[data-system="snes"] .desktop-header h3 {
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #5a5862;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 body[data-system="snes"] .desktop-badge {
-  background: linear-gradient(90deg, rgba(192, 115, 255, 0.18), rgba(112, 179, 255, 0.14));
+  background: linear-gradient(180deg, rgba(236, 236, 240, 0.86), rgba(171, 166, 181, 0.64));
+  border-color: rgba(92, 88, 102, 0.14);
+  color: #5d5a69;
+}
+
+body[data-system="snes"] .desktop-screen-board {
+  padding-top: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(162, 160, 170, 0.32)),
+    rgba(182, 180, 188, 0.42);
+  border-color: rgba(91, 88, 100, 0.14);
+  color: #575461;
 }
 
 body[data-system="n64"] .desktop-badge {
-  background: linear-gradient(90deg, rgba(68, 206, 128, 0.18), rgba(65, 111, 255, 0.14));
+  background: linear-gradient(180deg, rgba(234, 235, 234, 0.76), rgba(126, 133, 135, 0.48));
+  color: #242b2e;
+}
+
+body[data-system="n64"] .desktop-rig {
+  border-radius: 34px;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body[data-system="n64"] .desktop-console-sculpt {
+  height: 64px;
+}
+
+body[data-system="n64"] .desktop-screen-board {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(17, 21, 24, 0.24)),
+    rgba(45, 51, 55, 0.74);
 }
 
 body[data-system="ps1"] .desktop-badge,
@@ -675,27 +1933,72 @@ body[data-system="ps1"] .desktop-screen-board {
 }
 
 body[data-system="ps1"] .desktop-badge {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.42), rgba(232, 231, 226, 0.68));
+  min-width: 82px;
+  background: linear-gradient(180deg, rgba(242, 239, 232, 0.94), rgba(191, 192, 194, 0.62));
+  letter-spacing: 0.18em;
 }
 
 body[data-system="ps1"] .desktop-marquee,
 body[data-system="ps1"] .desktop-meta,
 body[data-system="ps1"] .desktop-kicker {
-  opacity: 0.68;
+  opacity: 0.8;
+  color: #4e5056;
 }
+
+body[data-system="ps1"] .desktop-kicker {
+  letter-spacing: 0.18em;
+}
+
+body[data-system="ps1"] .desktop-screen-wrap {
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top, rgba(255, 252, 245, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(35, 40, 47, 0.42), rgba(6, 8, 12, 0.94));
+  border-color: rgba(93, 96, 100, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 0 40px rgba(0, 0, 0, 0.46),
+    0 22px 36px rgba(71, 72, 75, 0.18);
+}
+
+body[data-system="ps1"] .desktop-footer {
+  align-items: flex-end;
+}
+
+body[data-system="ps1"] .desktop-console-sculpt {
+  height: 62px;
+  border-color: rgba(99, 102, 108, 0.18);
+}
+
+body[data-system="ps1"] .desktop-hero-strip {
+  gap: 8px;
+}
+
+body[data-system="ps1"] .desktop-hero-strip span {
+  height: 5px;
+  opacity: 0.82;
+}
+
+body[data-system="ps1"] .desktop-hero-strip--ps1 span:nth-child(1) { background: linear-gradient(90deg, #d15f44, #d97e4d); }
+body[data-system="ps1"] .desktop-hero-strip--ps1 span:nth-child(2) { background: linear-gradient(90deg, #c8c0b4, #e9dfcf); }
+body[data-system="ps1"] .desktop-hero-strip--ps1 span:nth-child(3) { background: linear-gradient(90deg, #4a61d0, #6e82e9); }
+body[data-system="ps1"] .desktop-hero-strip--ps1 span:nth-child(4) { background: linear-gradient(90deg, #317f69, #4ba589); }
 
 body[data-system="snes"] .touch-controls,
 body[data-system="n64"] .touch-controls,
-body[data-system="ps1"] .touch-controls {
+body[data-system="ps1"] .touch-controls,
+body[data-system="psp"] .touch-controls {
   display: none !important;
 }
 
 body[data-system="snes"] .console-dock button:disabled,
 body[data-system="n64"] .console-dock button:disabled,
 body[data-system="ps1"] .console-dock button:disabled,
+body[data-system="psp"] .console-dock button:disabled,
 body[data-system="snes"] .quick-strip button:disabled,
 body[data-system="n64"] .quick-strip button:disabled,
-body[data-system="ps1"] .quick-strip button:disabled {
+body[data-system="ps1"] .quick-strip button:disabled,
+body[data-system="psp"] .quick-strip button:disabled {
   opacity: 0.4;
 }
 
@@ -707,8 +2010,9 @@ body[data-system="ps1"] .quick-strip button:disabled {
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 0.85rem;
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--system-chip-bg);
   color: var(--ink);
+  border: 1px solid var(--system-chip-stroke);
 }
 
 .status-chip,
@@ -3502,6 +4806,10 @@ body[data-system="gba"] .mini-badge {
     grid-template-columns: 1fr;
   }
 
+  .onboarding-strip {
+    grid-template-columns: 1fr;
+  }
+
   .quick-actions {
     justify-content: flex-start;
   }
@@ -4316,6 +5624,10 @@ body.focus-mode .console-stage {
   width: fit-content;
   max-width: min(100vw - 20px, 980px);
   margin: 0 auto;
+}
+
+body.focus-mode[data-system="psp"] .console-stage {
+  max-width: min(100vw - 20px, 1120px);
 }
 
 body.focus-mode .console-shell-host {

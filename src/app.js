@@ -3,6 +3,7 @@ const GBC_SAVE_PREFIX = "FREEZE_CUSTOM_";
 const GBA_SAVE_PREFIX = "GBA_SAVE_SLOT_";
 const GBA_BIOS_URL = "./vendor/gba-js/resources/bios.bin";
 const DESKTOP_SYSTEMS = new Set(["snes", "n64", "ps1"]);
+const EMULATORJS_SYSTEMS = new Set([...DESKTOP_SYSTEMS, "psp"]);
 const DESKTOP_EMULATOR_VERSION = "stable";
 const DESKTOP_PATH_TO_DATA = `https://cdn.emulatorjs.org/${DESKTOP_EMULATOR_VERSION}/data/`;
 const DESKTOP_CORE_CONFIG = {
@@ -21,6 +22,12 @@ const DESKTOP_CORE_CONFIG = {
     label: "PS1",
     extensions: ["bin", "img", "pbp", "chd", "iso", "cue"],
     requiresBios: true,
+  },
+  psp: {
+    core: "psp",
+    label: "PSP",
+    extensions: ["iso", "cso", "pbp", "elf"],
+    requiresThreads: true,
   },
 };
 const ALL_SUPPORTED_ROM_EXTENSIONS = new Set([
@@ -69,6 +76,10 @@ const fullscreenState = {
   active: false,
   moved: [],
 };
+const pspAnalogState = {
+  pointerId: null,
+  activeDirections: new Set(),
+};
 const desktopRuntime = {
   active: false,
   currentSystem: "",
@@ -77,6 +88,7 @@ const desktopRuntime = {
   romObjectUrl: "",
   biosFile: null,
   biosObjectUrl: "",
+  assetObjectUrls: [],
   pendingLaunch: null,
 };
 
@@ -391,12 +403,23 @@ const shellTemplates = {
       <section class="desktop-rig desktop-rig--snes">
         <div class="desktop-header">
           <div>
-            <p class="desktop-kicker">Home Console</p>
-            <h3>Super Nintendo</h3>
+            <p class="desktop-kicker">Nintendo</p>
+            <h3>Super NES</h3>
           </div>
-          <span id="console-emblem" class="desktop-badge">16-bit</span>
+          <span id="console-emblem" class="desktop-badge">Control Deck</span>
+        </div>
+        <div class="desktop-hero-strip desktop-hero-strip--snes" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
         </div>
         <div class="desktop-screen-board">
+          <div class="desktop-console-sculpt desktop-console-sculpt--snes" aria-hidden="true">
+            <div class="snes-ridge snes-ridge--left"></div>
+            <div class="snes-ridge snes-ridge--right"></div>
+            <div class="snes-switches">
+              <span>Power</span>
+              <span>Reset</span>
+            </div>
+          </div>
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap">
             <canvas id="screen" width="256" height="224" aria-label="Pantalla Super Nintendo"></canvas>
@@ -406,10 +429,12 @@ const shellTemplates = {
           <div id="screen-marquee" class="desktop-marquee">SUPER NINTENDO ENTERTAINMENT SYSTEM</div>
         </div>
         <div class="desktop-footer">
-          <div class="desktop-slot desktop-slot--cart"></div>
+          <div class="desktop-slot desktop-slot--cart">
+            <span class="desktop-slot-label">game pak</span>
+          </div>
           <div class="desktop-meta">
             <span>4:3</span>
-            <span>Pixel home theater</span>
+            <span>North America shell</span>
           </div>
           <button id="console-power-btn" type="button" class="desktop-power-button" aria-label="Power"></button>
         </div>
@@ -421,12 +446,25 @@ const shellTemplates = {
       <section class="desktop-rig desktop-rig--n64">
         <div class="desktop-header">
           <div>
-            <p class="desktop-kicker">Home Console</p>
+            <p class="desktop-kicker">Nintendo</p>
             <h3>Nintendo 64</h3>
           </div>
-          <span id="console-emblem" class="desktop-badge">3D era</span>
+          <span id="console-emblem" class="desktop-badge">Control Deck</span>
+        </div>
+        <div class="desktop-hero-strip desktop-hero-strip--n64" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
         </div>
         <div class="desktop-screen-board">
+          <div class="desktop-console-sculpt desktop-console-sculpt--n64" aria-hidden="true">
+            <div class="n64-cart-slot"></div>
+            <div class="n64-jewel">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="n64-switches">
+              <span>Power</span>
+              <span>Reset</span>
+            </div>
+          </div>
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap desktop-screen-wrap--wide">
             <canvas id="screen" width="320" height="240" aria-label="Pantalla Nintendo 64"></canvas>
@@ -436,10 +474,12 @@ const shellTemplates = {
           <div id="screen-marquee" class="desktop-marquee">NINTENDO 64 DISPLAY DECK</div>
         </div>
         <div class="desktop-footer">
-          <div class="desktop-slot desktop-slot--port"></div>
+          <div class="desktop-port-bank" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
           <div class="desktop-meta">
             <span>4:3</span>
-            <span>Analog showcase</span>
+            <span>charcoal launch shell</span>
           </div>
           <button id="console-power-btn" type="button" class="desktop-power-button" aria-label="Power"></button>
         </div>
@@ -451,12 +491,26 @@ const shellTemplates = {
       <section class="desktop-rig desktop-rig--ps1">
         <div class="desktop-header">
           <div>
-            <p class="desktop-kicker">Home Console</p>
-            <h3>PlayStation</h3>
+            <p class="desktop-kicker">Sony Computer Entertainment</p>
+            <div class="ps-wordmark" aria-label="PlayStation">
+              <span class="ps-mark">
+                <span class="ps-mark-p"></span>
+                <span class="ps-mark-s"></span>
+              </span>
+              <span class="ps-word">PlayStation</span>
+            </div>
           </div>
-          <span id="console-emblem" class="desktop-badge">CD-ROM</span>
+          <span id="console-emblem" class="desktop-badge">SCPH</span>
+        </div>
+        <div class="desktop-hero-strip desktop-hero-strip--ps1" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
         </div>
         <div class="desktop-screen-board">
+          <div class="desktop-console-sculpt desktop-console-sculpt--ps1" aria-hidden="true">
+            <div class="ps1-disc-lid">
+              <div class="ps1-disc-ring"></div>
+            </div>
+          </div>
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap desktop-screen-wrap--wide">
             <canvas id="screen" width="320" height="240" aria-label="Pantalla PlayStation"></canvas>
@@ -466,14 +520,100 @@ const shellTemplates = {
           <div id="screen-marquee" class="desktop-marquee">PLAYSTATION VIDEO OUT</div>
         </div>
         <div class="desktop-footer">
-          <div class="desktop-slot desktop-slot--disc"></div>
+          <div class="ps1-front-buttons" aria-hidden="true">
+            <span>Open</span>
+            <span>Reset</span>
+          </div>
+          <div class="desktop-memory-bays" aria-hidden="true">
+            <span>MEMORY CARD 1</span>
+            <span>MEMORY CARD 2</span>
+          </div>
           <div class="desktop-meta">
             <span>4:3</span>
-            <span>CD memory profile</span>
+            <span>model gray deck</span>
           </div>
           <button id="console-power-btn" type="button" class="desktop-power-button" aria-label="Power"></button>
         </div>
       </section>
+    </div>
+  `,
+  psp: `
+    <div class="console-shell system-shell--handheld system-shell--psp" data-shell-system="psp">
+      <div class="psp-3000">
+        <div class="psp-inner">
+          <button type="button" class="psp-shoulder-btn psp-shoulder-btn--left" data-button="l" aria-label="L"></button>
+          <button type="button" class="psp-shoulder-btn psp-shoulder-btn--right" data-button="r" aria-label="R"></button>
+          <div class="oval-half oval-half--top-left"></div>
+          <div class="oval-half oval-half--top-right"></div>
+          <div class="oval-half oval-half--bottom-left"></div>
+          <div class="oval-half oval-half--bottom-right"></div>
+          <button id="console-power-btn" type="button" class="psp-side-switch" aria-label="Power"></button>
+          <div class="controls controls--left">
+            <p class="sony" id="console-emblem">SONY</p>
+            <div class="speaker speaker--left"></div>
+            <div class="d-pad" aria-hidden="true">
+              <button type="button" class="btn-direction up" data-button="up" aria-label="Arriba"></button>
+              <button type="button" class="btn-direction right" data-button="right" aria-label="Derecha"></button>
+              <button type="button" class="btn-direction down" data-button="down" aria-label="Abajo"></button>
+              <button type="button" class="btn-direction left" data-button="left" aria-label="Izquierda"></button>
+            </div>
+            <div class="analog-stick" data-analog-stick="psp" aria-label="Stick analogico PSP">
+              <div class="stick"></div>
+            </div>
+            <div class="indicator indicator--memory" aria-hidden="true">
+              <div class="led led--memory"></div>
+              <div class="icon-memory"></div>
+            </div>
+            <div class="indicator indicator--wifi" aria-hidden="true">
+              <div class="led led--wifi"></div>
+              <div class="icon-wifi"></div>
+            </div>
+          </div>
+          <div class="display">
+            <div id="screen-wrap" class="screen-wrap psp-display-wrap">
+              <canvas id="screen" width="480" height="272" aria-label="Pantalla PlayStation Portable"></canvas>
+              <div id="screen-hint" class="screen-hint hidden">PSP listo para mockup</div>
+              <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="controls controls--right">
+            <div class="speaker speaker--right"></div>
+            <div class="d-buttons" aria-hidden="true">
+              <button type="button" class="btn-play btn-triangle" data-button="x" aria-label="Triangulo"></button>
+              <button type="button" class="btn-play btn-circle" data-button="a" aria-label="Circulo"></button>
+              <button type="button" class="btn-play btn-cross" data-button="b" aria-label="Cruz"></button>
+              <button type="button" class="btn-play btn-square" data-button="y" aria-label="Cuadrado"></button>
+            </div>
+            <div class="indicator indicator--power" aria-hidden="true">
+              <p class="power">POWER</p>
+              <div class="led led--power"></div>
+            </div>
+            <div class="indicator indicator--hold" aria-hidden="true">
+              <p class="hold">HOLD</p>
+              <div class="led led--hold"></div>
+            </div>
+          </div>
+          <div class="controls controls--bottom">
+            <div class="d-option">
+              <button type="button" class="btn-option btn-home" data-app-action="home" aria-label="HOME"></button>
+              <div class="btn-vol-group">
+                <button type="button" class="btn-option btn-vol btn-vol--minus" data-app-action="volume-down" aria-label="Bajar volumen"></button>
+                <p class="vol">VOL</p>
+                <button type="button" class="btn-option btn-vol btn-vol--plus" data-app-action="volume-up" aria-label="Subir volumen"></button>
+              </div>
+              <div class="microphone"></div>
+              <div class="psp-wordmark" id="screen-marquee">PSP</div>
+              <div class="btn-group-display-sound">
+                <div class="btn-option btn-display"></div>
+                <div class="btn-option btn-sound"></div>
+              </div>
+              <button type="button" class="btn-option btn-select" data-button="select">SELECT</button>
+              <button type="button" class="btn-option btn-start" data-button="start">START</button>
+            </div>
+          </div>
+        </div>
+        <div class="shadow"></div>
+      </div>
     </div>
   `,
 };
@@ -499,6 +639,11 @@ function refreshElements() {
   elements.ps1BiosInput = document.querySelector("#ps1-bios-input");
   elements.ps1BiosBadge = document.querySelector("#ps1-bios-badge");
   elements.statusLine = document.querySelector("#status-line");
+  elements.onboardingStrip = document.querySelector("#onboarding-strip");
+  elements.onboardingSteps = [...document.querySelectorAll("[data-onboarding-step]")];
+  elements.onboardingRomCopy = document.querySelector("#onboarding-rom-copy");
+  elements.onboardingSystemCopy = document.querySelector("#onboarding-system-copy");
+  elements.onboardingBiosCopy = document.querySelector("#onboarding-bios-copy");
   elements.stateOutput = document.querySelector("#state-output");
   elements.menuOverlay = document.querySelector("#menu-overlay");
   elements.toggleMenuBtn = document.querySelector("#toggle-menu-btn");
@@ -554,6 +699,9 @@ function refreshElements() {
   elements.cheatCountBadge = document.querySelector("#cheat-count-badge");
   elements.attackInputs = [...document.querySelectorAll("[data-attack-index]")];
   elements.hardwareButtons = [...document.querySelectorAll("[data-button]")];
+  elements.pspAppButtons = [...document.querySelectorAll("[data-app-action]")];
+  elements.pspAnalogStick = document.querySelector("[data-analog-stick='psp']");
+  elements.pspAnalogKnob = document.querySelector("[data-analog-stick='psp'] .stick");
   elements.keymapButtons = [...document.querySelectorAll("[data-keymap-action]")];
 }
 
@@ -663,7 +811,7 @@ refreshElements();
 
 function getInitialSystemFromPage() {
   const pageSystem = (elements.body?.dataset?.system || "").toLowerCase();
-  if (pageSystem === "gba" || pageSystem === "ds" || pageSystem === "gbc" || DESKTOP_SYSTEMS.has(pageSystem)) {
+  if (pageSystem === "gba" || pageSystem === "ds" || pageSystem === "gbc" || EMULATORJS_SYSTEMS.has(pageSystem)) {
     return pageSystem;
   }
   return "gbc";
@@ -690,6 +838,83 @@ function desktopNeedsBios(system = uiState.currentSystem) {
   return DESKTOP_CORE_CONFIG[system]?.requiresBios === true;
 }
 
+function emulatorJsNeedsThreads(system = uiState.currentSystem) {
+  return DESKTOP_CORE_CONFIG[system]?.requiresThreads === true;
+}
+
+function emulatorJsDefaultControls() {
+  return {
+    0: {
+      0: "x",
+      1: "v",
+      2: "Backspace",
+      3: "Enter",
+      4: "ArrowUp",
+      5: "ArrowDown",
+      6: "ArrowLeft",
+      7: "ArrowRight",
+      8: "z",
+      9: "c",
+      10: "a",
+      11: "s",
+    },
+  };
+}
+
+function getBoundKeyForAction(action) {
+  return Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === action) || "";
+}
+
+function keyEventValueForBinding(key) {
+  const specialMap = {
+    arrowup: "ArrowUp",
+    arrowdown: "ArrowDown",
+    arrowleft: "ArrowLeft",
+    arrowright: "ArrowRight",
+    enter: "Enter",
+    backspace: "Backspace",
+    escape: "Escape",
+    shift: "Shift",
+    tab: "Tab",
+    " ": " ",
+  };
+  const normalized = String(key || "").toLowerCase();
+  return specialMap[normalized] || key;
+}
+
+function dispatchEmulatorJsKey(action, eventType) {
+  const boundKey = getBoundKeyForAction(action);
+  if (!boundKey || !desktopRuntime.iframe?.contentWindow) return;
+  const frameWindow = desktopRuntime.iframe.contentWindow;
+  const key = keyEventValueForBinding(boundKey);
+  frameWindow.focus();
+  if (typeof frameWindow.__codexDispatchKey === "function") {
+    frameWindow.__codexDispatchKey(key, eventType);
+    return;
+  }
+  const payload = {
+    key,
+    bubbles: true,
+    cancelable: true,
+  };
+  const keyboardEvent = new KeyboardEvent(eventType, payload);
+  frameWindow.dispatchEvent(keyboardEvent);
+  frameWindow.document.dispatchEvent(new KeyboardEvent(eventType, payload));
+  frameWindow.document.activeElement?.dispatchEvent(new KeyboardEvent(eventType, payload));
+}
+
+function sendDesktopCommand(command, value) {
+  const frameWindow = desktopRuntime.iframe?.contentWindow;
+  if (!frameWindow) return;
+  frameWindow.postMessage({ type: "desktop-command", command, value }, "*");
+  if (command === "set-volume" && typeof frameWindow.__codexApplyVolume === "function") {
+    frameWindow.__codexApplyVolume(value);
+  }
+  if (command === "dispatch-key" && typeof frameWindow.__codexDispatchKey === "function") {
+    frameWindow.__codexDispatchKey(value.key, value.eventType);
+  }
+}
+
 function hasDesktopBios(system = uiState.currentSystem) {
   return !desktopNeedsBios(system) || desktopRuntime.biosFile instanceof File;
 }
@@ -700,7 +925,18 @@ function revokeObjectUrl(key) {
   desktopRuntime[key] = "";
 }
 
-function teardownDesktopRuntime({ preserveBios = true } = {}) {
+function revokeDesktopAssetUrls() {
+  desktopRuntime.assetObjectUrls.forEach((url) => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.warn("No se pudo revocar asset url", error);
+    }
+  });
+  desktopRuntime.assetObjectUrls = [];
+}
+
+function teardownDesktopRuntime({ preserveBios = true, preserveAssets = false } = {}) {
   if (desktopRuntime.iframe && desktopRuntime.iframe.parentNode) {
     desktopRuntime.iframe.remove();
   }
@@ -710,6 +946,9 @@ function teardownDesktopRuntime({ preserveBios = true } = {}) {
   desktopRuntime.romFile = null;
   revokeObjectUrl("romObjectUrl");
   revokeObjectUrl("biosObjectUrl");
+  if (!preserveAssets) {
+    revokeDesktopAssetUrls();
+  }
   if (!preserveBios) {
     desktopRuntime.biosFile = null;
   }
@@ -747,17 +986,92 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
   <body>
     <div id="game"></div>
     <script>
+      window.__codexTrackedGains = new Set();
+      window.__codexVolume = 1;
+      window.__codexTrackGainNode = function (node) {
+        if (!node || !node.gain) return node;
+        window.__codexTrackedGains.add(node);
+        try {
+          node.gain.value = window.__codexVolume;
+        } catch (error) {}
+        return node;
+      };
+      window.__codexPatchAudioCtor = function (name) {
+        const BaseCtor = window[name];
+        if (typeof BaseCtor !== "function" || BaseCtor.__codexPatched) return;
+        class CodexAudioContext extends BaseCtor {
+          createGain(...args) {
+            return window.__codexTrackGainNode(super.createGain(...args));
+          }
+          createGainNode(...args) {
+            return window.__codexTrackGainNode(super.createGainNode(...args));
+          }
+        }
+        Object.defineProperty(CodexAudioContext, "__codexPatched", {
+          value: true,
+          configurable: false,
+          enumerable: false,
+          writable: false,
+        });
+        window[name] = CodexAudioContext;
+      };
+      window.__codexPatchAudioCtor("AudioContext");
+      window.__codexPatchAudioCtor("webkitAudioContext");
+      window.__codexApplyVolume = function (nextVolume) {
+        const normalized = Math.max(0, Math.min(1, Number(nextVolume) || 0));
+        window.__codexVolume = normalized;
+        window.__codexTrackedGains.forEach((node) => {
+          try {
+            if (node && node.gain) {
+              node.gain.value = normalized;
+            }
+          } catch (error) {}
+        });
+        document.querySelectorAll("audio, video").forEach((mediaNode) => {
+          mediaNode.volume = normalized;
+          mediaNode.muted = normalized <= 0;
+        });
+      };
+      window.__codexDispatchKey = function (key, eventType = "keydown") {
+        const payload = { key, bubbles: true, cancelable: true };
+        const targets = [
+          window,
+          document,
+          document.activeElement,
+          document.querySelector("canvas"),
+          document.querySelector("#game"),
+        ].filter(Boolean);
+        targets.forEach((target) => {
+          try {
+            target.dispatchEvent(new KeyboardEvent(eventType, payload));
+          } catch (error) {}
+        });
+      };
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "desktop-command") return;
+        if (event.data.command === "set-volume") {
+          window.__codexApplyVolume(event.data.value);
+          return;
+        }
+        if (event.data.command === "dispatch-key" && event.data.value) {
+          window.__codexDispatchKey(event.data.value.key, event.data.value.eventType);
+        }
+      });
       window.EJS_player = "#game";
       window.EJS_pathToData = ${escapedPath};
       window.EJS_pathtodata = ${escapedPath};
       window.EJS_gameUrl = ${escapedGameUrl};
       window.EJS_core = ${escapedCore};
       window.EJS_gameID = ${escapedGameId};
+      window.EJS_gameId = ${escapedGameId};
+      window.EJS_defaultControls = ${JSON.stringify(emulatorJsDefaultControls())};
       window.EJS_language = "es-ES";
       window.EJS_startOnLoaded = true;
       window.EJS_color = "#10151b";
+      ${emulatorJsNeedsThreads(system) ? "window.EJS_threads = true;" : ""}
       ${biosUrl ? `window.EJS_biosUrl = ${JSON.stringify(biosUrl)};` : ""}
       window.addEventListener("load", () => {
+        window.__codexApplyVolume(1);
         parent.postMessage({ type: "desktop-frame-ready", system: ${escapedSystem} }, "*");
       });
     </script>
@@ -766,20 +1080,21 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
 </html>`;
 }
 
-async function startDesktopRuntime({ system, file }) {
-  if (!DESKTOP_SYSTEMS.has(system)) {
-    throw new Error("Sistema de sobremesa no soportado.");
+async function startDesktopRuntime({ system, file, assetUrls = [] }) {
+  if (!EMULATORJS_SYSTEMS.has(system)) {
+    throw new Error("Sistema EmulatorJS no soportado.");
   }
   if (desktopNeedsBios(system) && !hasDesktopBios(system)) {
     throw new Error("PS1 necesita BIOS. Carga un archivo BIOS primero.");
   }
 
-  teardownDesktopRuntime();
+  teardownDesktopRuntime({ preserveAssets: assetUrls.length > 0 });
   setCurrentSystem(system);
 
-  desktopRuntime.pendingLaunch = { system, file };
+  desktopRuntime.pendingLaunch = { system, file, assetUrls };
   desktopRuntime.romFile = file;
   desktopRuntime.currentSystem = system;
+  desktopRuntime.assetObjectUrls = [...assetUrls];
   desktopRuntime.romObjectUrl = URL.createObjectURL(file);
   if (desktopNeedsBios(system)) {
     desktopRuntime.biosObjectUrl = URL.createObjectURL(desktopRuntime.biosFile);
@@ -808,7 +1123,7 @@ async function startDesktopRuntime({ system, file }) {
 
 function loadPendingDesktopRuntime() {
   if (!desktopRuntime.pendingLaunch) {
-    updateStatus("Carga una ROM de SNES, N64 o PS1 primero.");
+    updateStatus("Carga una ROM de SNES, N64, PS1 o PSP primero.");
     return;
   }
   startDesktopRuntime(desktopRuntime.pendingLaunch)
@@ -825,6 +1140,11 @@ function loadPendingDesktopRuntime() {
 function updatePs1Bios(file) {
   desktopRuntime.biosFile = file || null;
   revokeObjectUrl("biosObjectUrl");
+}
+
+function powerOffEmulatorJsSystem() {
+  if (!desktopRuntime.active) return;
+  teardownDesktopRuntime({ preserveAssets: (desktopRuntime.pendingLaunch?.assetUrls || []).length > 0 });
 }
 
 window.cout = function (message) {
@@ -905,14 +1225,14 @@ function isDsReady() {
 }
 
 function isReady() {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
   if (uiState.currentSystem === "gba") return isGbaReady();
   if (uiState.currentSystem === "ds") return isDsReady();
   return isGbcReady();
 }
 
 function isPlaying() {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
   if (uiState.currentSystem === "gba") {
     return isGbaReady() && !gbaCore.paused;
   }
@@ -937,21 +1257,116 @@ function getFileExtension(fileName) {
   return match ? match[1].toLowerCase() : "";
 }
 
-function getDesktopSystemFromExtension(ext) {
-  return Object.entries(DESKTOP_CORE_CONFIG).find(([, config]) => config.extensions.includes(ext))?.[0] || "";
+function getSystemsFromExtension(ext) {
+  return Object.entries(DESKTOP_CORE_CONFIG)
+    .filter(([, config]) => config.extensions.includes(ext))
+    .map(([system]) => system);
+}
+
+function formatSystemList(systems) {
+  return systems.map((item) => item.toUpperCase()).join(" o ");
+}
+
+function getPrimaryFile(fileList) {
+  if (!Array.isArray(fileList) || fileList.length === 0) return null;
+  const cueFile = fileList.find((file) => getFileExtension(file.name) === "cue");
+  return cueFile || fileList[0];
+}
+
+function normalizeCueReference(fileName) {
+  return String(fileName || "")
+    .replace(/^['"]|['"]$/g, "")
+    .split(/[\\/]/)
+    .pop()
+    .trim()
+    .toLowerCase();
+}
+
+function parseCueReferences(cueText) {
+  const lines = String(cueText || "").split(/\r?\n/);
+  return lines
+    .map((line, index) => {
+      const match = line.match(/^\s*FILE\s+(?:"([^"]+)"|([^\s]+))\s+(.+)\s*$/i);
+      if (!match) return null;
+      return {
+        index,
+        original: match[1] || match[2] || "",
+        fileType: match[3] || "BINARY",
+      };
+    })
+    .filter(Boolean);
+}
+
+async function buildPs1CueBundle(files) {
+  const cueFile = files.find((file) => getFileExtension(file.name) === "cue");
+  if (!cueFile) {
+    throw new Error("Para PS1 multiarchivo sube el .cue junto con todos sus .bin.");
+  }
+  const cueText = await cueFile.text();
+  const references = parseCueReferences(cueText);
+  if (references.length === 0) {
+    throw new Error("El .cue no contiene pistas FILE validas.");
+  }
+
+  const fileMap = new Map(
+    files
+      .filter((file) => file !== cueFile)
+      .map((file) => [normalizeCueReference(file.name), file]),
+  );
+  const lines = cueText.split(/\r?\n/);
+  const assetUrls = [];
+  try {
+    references.forEach((reference) => {
+      const matchedFile = fileMap.get(normalizeCueReference(reference.original));
+      if (!matchedFile) {
+        throw new Error(`Falta el archivo referenciado por el CUE: ${reference.original}`);
+      }
+      const assetUrl = URL.createObjectURL(matchedFile);
+      assetUrls.push(assetUrl);
+      lines[reference.index] = `FILE "${assetUrl}" ${reference.fileType}`;
+    });
+  } catch (error) {
+    assetUrls.forEach((url) => URL.revokeObjectURL(url));
+    throw error;
+  }
+
+  const bundledCue = new File([lines.join("\n")], cueFile.name, { type: "application/octet-stream" });
+  return {
+    launchFile: bundledCue,
+    assetUrls,
+    displayName: `${cueFile.name} + ${files.length - 1} pista(s)`,
+    displaySize: files.reduce((total, file) => total + file.size, 0),
+  };
 }
 
 function getSystemFromFile(file) {
   const ext = getFileExtension(file.name);
   if (ext === "gba") return "gba";
   if (ext === "nds") return "ds";
-  const desktopSystem = getDesktopSystemFromExtension(ext);
-  if (desktopSystem) return desktopSystem;
+  const emulatorJsSystems = getSystemsFromExtension(ext);
+  if (emulatorJsSystems.length === 1) return emulatorJsSystems[0];
+  if (emulatorJsSystems.length > 1) {
+    if (uiState.systemPreference !== "auto" && emulatorJsSystems.includes(uiState.systemPreference)) {
+      return uiState.systemPreference;
+    }
+    if (emulatorJsSystems.includes(uiState.currentSystem)) {
+      return uiState.currentSystem;
+    }
+    return "";
+  }
   return "gbc";
 }
 
-function resolveTargetSystem(file) {
-  const fileSystem = getSystemFromFile(file);
+function resolveTargetSystem(fileList) {
+  const file = getPrimaryFile(fileList);
+  const fileSystem = file ? getSystemFromFile(file) : "";
+  if (!fileSystem) {
+    return {
+      system: "",
+      forcedByRom: false,
+      ambiguous: true,
+    };
+  }
   if (uiState.systemPreference === "auto") {
     return {
       system: fileSystem,
@@ -971,16 +1386,36 @@ function resolveTargetSystem(file) {
   };
 }
 
-function validateRomFile(file) {
+function validateRomSelection(fileList) {
+  const files = Array.isArray(fileList) ? fileList : [fileList].filter(Boolean);
+  if (files.length === 0) {
+    return "No se selecciono ningun archivo.";
+  }
+  const primaryFile = getPrimaryFile(files);
+  if (!primaryFile) {
+    return "No se encontro un archivo principal para iniciar.";
+  }
+  if (files.length > 1 && getFileExtension(primaryFile.name) !== "cue") {
+    return "Si vas a subir varios archivos, usa el .cue junto con todos sus .bin de PS1.";
+  }
+  if (files.length === 1 && getFileExtension(primaryFile.name) === "cue") {
+    return "Para PS1 .cue necesitas seleccionar tambien todos los .bin del juego en la misma carga.";
+  }
+
+  const file = primaryFile;
   const ext = getFileExtension(file.name);
   if (ext === "zip" || ext === "7z" || ext === "rar") {
     return "Sube la ROM descomprimida, no .zip/.7z/.rar.";
   }
   if (!ALL_SUPPORTED_ROM_EXTENSIONS.has(ext)) {
-    return "Formato no soportado. Usa GB/GBC/GBA/DS o ROMs SNES, N64 y PS1 en formatos sueltos.";
+    return "Formato no soportado. Usa GB/GBC/GBA/DS o ROMs SNES, N64, PS1 y PSP en formatos sueltos.";
   }
-  if (ext === "cue") {
-    return "Por ahora no cargamos .cue multiarchivo aqui. Usa una imagen unica como .chd, .pbp, .bin o .iso.";
+  const emulatorJsSystems = getSystemsFromExtension(ext);
+  if (emulatorJsSystems.length > 1 && uiState.systemPreference === "auto" && !emulatorJsSystems.includes(uiState.currentSystem)) {
+    return `La extension .${ext} puede ser ${formatSystemList(emulatorJsSystems)}. Elige uno de esos sistemas arriba y vuelve a subir la ROM.`;
+  }
+  if (emulatorJsSystems.length > 1 && uiState.systemPreference !== "auto" && !emulatorJsSystems.includes(uiState.systemPreference)) {
+    return `La extension .${ext} puede ser ${formatSystemList(emulatorJsSystems)}, pero ahora mismo tienes ${uiState.systemPreference.toUpperCase()} seleccionado. Cambia al sistema correcto y vuelve a subir la ROM.`;
   }
   return "";
 }
@@ -1016,7 +1451,7 @@ function parseCheat(addressRaw, valueRaw, labelRaw) {
 function setCurrentSystem(system) {
   const shouldRenderShell = uiState.currentSystem !== system
     || document.querySelector("#console-shell-host .console-shell")?.dataset.shellSystem !== system;
-  if (uiState.currentSystem !== system && DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
+  if (uiState.currentSystem !== system && EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     teardownDesktopRuntime();
     desktopRuntime.pendingLaunch = null;
   }
@@ -1053,6 +1488,12 @@ function ensureShellElements(system = uiState.currentSystem) {
 
 function syncCanvasResolution(system = uiState.currentSystem) {
   ensureShellElements(system);
+  if (system === "psp") {
+    if (!elements.canvas) return;
+    elements.canvas.width = 480;
+    elements.canvas.height = 272;
+    return;
+  }
   if (system === "snes") {
     if (!elements.canvas) return;
     elements.canvas.width = 256;
@@ -1261,12 +1702,12 @@ function updateStatus(extra = uiState.lastStatusExtra) {
   const romText = uiState.loadedRom
     ? `ROM: ${uiState.loadedRom.name} (${uiState.loadedRom.size} bytes)`
     : "Sin ROM cargada";
-  const systemLabel = DESKTOP_SYSTEMS.has(uiState.currentSystem)
+  const systemLabel = EMULATORJS_SYSTEMS.has(uiState.currentSystem)
     ? uiState.currentSystem.toUpperCase()
     : uiState.currentSystem.toUpperCase();
   const powerText = uiState.awaitingStart
     ? "lista para iniciar"
-    : DESKTOP_SYSTEMS.has(uiState.currentSystem)
+    : EMULATORJS_SYSTEMS.has(uiState.currentSystem)
       ? desktopRuntime.active
         ? "corriendo"
         : desktopRuntime.pendingLaunch
@@ -1278,13 +1719,55 @@ function updateStatus(extra = uiState.lastStatusExtra) {
   elements.statusLine.textContent = `${romText}. Sistema: ${systemLabel}. Estado: ${powerText}. Ultima entrada: ${uiState.lastInput}.${uiState.lastStatusExtra ? ` ${uiState.lastStatusExtra}` : ""}`;
 }
 
+function refreshOnboarding() {
+  if (!elements.onboardingStrip) return;
+  const primaryFile = uiState.loadedRom;
+  const isPs1Session = uiState.currentSystem === "ps1" || desktopRuntime.pendingLaunch?.system === "ps1";
+  const needsManualChoice = primaryFile
+    ? getSystemsFromExtension(getFileExtension(primaryFile.name)).length > 1 && uiState.systemPreference === "auto"
+    : false;
+  const stepStates = {
+    rom: Boolean(primaryFile),
+    system: !needsManualChoice,
+    bios: !isPs1Session || hasDesktopBios("ps1"),
+  };
+
+  elements.onboardingSteps.forEach((step) => {
+    const key = step.dataset.onboardingStep;
+    const isDone = stepStates[key];
+    const isActive = !isDone && ((key === "rom") || (key === "system" && stepStates.rom) || (key === "bios" && stepStates.rom && stepStates.system));
+    step.classList.toggle("is-done", Boolean(isDone));
+    step.classList.toggle("is-active", Boolean(isActive));
+  });
+
+  if (elements.onboardingRomCopy) {
+    elements.onboardingRomCopy.textContent = primaryFile
+      ? `Cargada: ${primaryFile.name}`
+      : "Acepta archivo suelto o pack PS1 .cue + .bin.";
+  }
+  if (elements.onboardingSystemCopy) {
+    elements.onboardingSystemCopy.textContent = needsManualChoice
+      ? `La ROM pide elegir sistema manual: ${formatSystemList(getSystemsFromExtension(getFileExtension(primaryFile.name)))}.`
+      : uiState.systemPreference === "auto"
+        ? "Auto funciona bien salvo extensiones ambiguas como .iso o .pbp."
+        : `Modo manual activo en ${uiState.systemPreference.toUpperCase()}.`;
+  }
+  if (elements.onboardingBiosCopy) {
+    elements.onboardingBiosCopy.textContent = isPs1Session
+      ? hasDesktopBios("ps1")
+        ? "BIOS PS1 lista. Ya puedes arrancar el juego."
+        : "PS1 necesita BIOS local de sesion antes de iniciar el core."
+      : "Solo PS1 pide BIOS; los demas sistemas arrancan directo.";
+  }
+}
+
 function currentSavePayload() {
   if (!isReady()) {
     throw new Error("No hay emulacion activa para exportar.");
   }
 
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
-    throw new Error("SNES, N64 y PS1 usan el menu interno del core web para saves.");
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    throw new Error("SNES, N64, PS1 y PSP usan el menu interno del core web para saves.");
   }
 
   if (uiState.currentSystem === "ds") {
@@ -1339,8 +1822,8 @@ function exportCurrentSave() {
 async function importCurrentSave(file) {
   if (!file) return;
   try {
-    if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
-      throw new Error("SNES, N64 y PS1 usan el gestor interno del core web para saves.");
+    if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+      throw new Error("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
     }
     const raw = await file.text();
     const data = JSON.parse(raw);
@@ -1445,7 +1928,7 @@ function syncFormState() {
 }
 
 function applyVisualPrefs() {
-  const hasTouchSurface = !DESKTOP_SYSTEMS.has(uiState.currentSystem);
+  const hasTouchSurface = !EMULATORJS_SYSTEMS.has(uiState.currentSystem);
   elements.body.dataset.theme = uiState.theme;
   elements.body.dataset.system = uiState.currentSystem;
   elements.body.dataset.filter = uiState.filterMode;
@@ -1495,7 +1978,7 @@ function keyLabelForKey(key) {
 }
 
 function getScreenHintText() {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     if (uiState.currentSystem === "ps1" && uiState.loadedRom && !hasDesktopBios("ps1")) {
       return "Carga BIOS PS1 para iniciar este juego";
     }
@@ -1528,6 +2011,9 @@ function renderSystemToggle() {
 
 function setVolume(volumePercent) {
   uiState.volume = Math.max(0, Math.min(100, volumePercent));
+  if (elements.volumeRange) {
+    elements.volumeRange.value = String(uiState.volume);
+  }
   settings[0] = uiState.volume > 0;
   settings[3] = uiState.volume / 100;
   if (isGbcReady() && window.gameboy.audioHandle) {
@@ -1535,6 +2021,9 @@ function setVolume(volumePercent) {
   }
   if (isGbaReady()) {
     gbaCore.audio.masterVolume = Math.max(0, Math.pow(2, settings[3]) - 1);
+  }
+  if (desktopRuntime.active) {
+    sendDesktopCommand("set-volume", settings[3]);
   }
 }
 
@@ -1575,7 +2064,7 @@ function resumeGbcEmulator() {
 }
 
 function startCurrentEmulator() {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     loadPendingDesktopRuntime();
     return;
   }
@@ -1596,14 +2085,14 @@ function startCurrentEmulator() {
 }
 
 function togglePowerState() {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     if (!desktopRuntime.pendingLaunch && !desktopRuntime.active) {
-      updateStatus("Carga una ROM de SNES, N64 o PS1 primero.");
+      updateStatus("Carga una ROM de SNES, N64, PS1 o PSP primero.");
       return;
     }
     if (desktopRuntime.active) {
-      loadPendingDesktopRuntime();
-      afterInput("power_restart", "Core reiniciado.");
+      powerOffEmulatorJsSystem();
+      afterInput("power_off", "Core apagado.");
       return;
     }
     if (uiState.awaitingStart) {
@@ -1649,8 +2138,10 @@ function togglePowerState() {
 }
 
 function refreshMeta() {
+  const isEmulatorJs = EMULATORJS_SYSTEMS.has(uiState.currentSystem);
   const isDesktop = DESKTOP_SYSTEMS.has(uiState.currentSystem);
-  elements.powerBtn.textContent = isDesktop
+  const isPsp = uiState.currentSystem === "psp";
+  elements.powerBtn.textContent = isEmulatorJs
     ? desktopRuntime.active
       ? "Reiniciar"
       : "Iniciar"
@@ -1665,7 +2156,9 @@ function refreshMeta() {
   }
   const isGba = uiState.currentSystem === "gba";
   const isDs = uiState.currentSystem === "ds";
-  elements.brandChip.textContent = isDesktop
+  elements.brandChip.textContent = isPsp
+    ? "Pocket Codex PSP"
+    : isDesktop
     ? uiState.currentSystem === "snes"
       ? "Pocket Codex Super"
       : uiState.currentSystem === "n64"
@@ -1675,7 +2168,9 @@ function refreshMeta() {
   const screenMarquee = document.querySelector("#screen-marquee");
   const consoleEmblem = document.querySelector("#console-emblem");
   if (screenMarquee) {
-    screenMarquee.textContent = isDesktop
+    screenMarquee.textContent = isPsp
+      ? "PLAYSTATION PORTABLE"
+      : isDesktop
       ? uiState.currentSystem === "snes"
         ? "SUPER NINTENDO ENTERTAINMENT SYSTEM"
         : uiState.currentSystem === "n64"
@@ -1684,20 +2179,24 @@ function refreshMeta() {
       : isDs ? "NINTENDO DS" : isGba ? "GAME BOY ADVANCE" : "GAME BOY COLOR";
   }
   if (consoleEmblem) {
-    consoleEmblem.textContent = isDesktop
+    consoleEmblem.textContent = isPsp
+      ? "Sony"
+      : isDesktop
       ? uiState.currentSystem === "ps1"
         ? "Sony"
         : "Nintendo"
       : "Nintendo";
   }
-  elements.systemChip.textContent = isDesktop
+  elements.systemChip.textContent = isEmulatorJs
     ? `Sistema ${uiState.currentSystem.toUpperCase()}`
     : isDs ? "Sistema DS" : isGba ? "Sistema GBA" : "Sistema GB/GBC";
-  elements.saveModeChip.textContent = isDesktop
+  elements.saveModeChip.textContent = isEmulatorJs
     ? "Core web"
     : isDs ? "Savefile DS" : isGba ? "SRAM por slots" : "Save states";
-  elements.systemBadge.textContent = isDesktop ? uiState.currentSystem : isDs ? "ds" : isGba ? "gba" : "gbc";
-  elements.systemDescription.textContent = isDesktop
+  elements.systemBadge.textContent = isEmulatorJs ? uiState.currentSystem : isDs ? "ds" : isGba ? "gba" : "gbc";
+  elements.systemDescription.textContent = isPsp
+    ? "Modo PSP activo. Corre sobre PPSSPP via EmulatorJS con un shell provisional hasta que llegue tu mockup."
+    : isDesktop
     ? uiState.currentSystem === "snes"
       ? "Modo SNES activo. Corre sobre EmulatorJS dentro de una vitrina de sobremesa 4:3 con foco total en pantalla."
       : uiState.currentSystem === "n64"
@@ -1708,39 +2207,49 @@ function refreshMeta() {
     : isGba
     ? "Modo Advance activo. La pantalla usa proporcion GBA, los hombros L/R quedan activos y los slots guardan SRAM del juego."
     : "Modo Game Boy o Game Boy Color activo. Los slots guardan save states completos del emulador para volver exactamente al mismo punto.";
-  elements.controlProfile.textContent = isDesktop
+  elements.controlProfile.textContent = isPsp
+    ? "Perfil PSP"
+    : isDesktop
     ? "Perfil sobremesa"
     : isDs ? "Perfil DS" : isGba ? "Perfil GBA" : "Perfil GB/GBC";
-  elements.controlHint.textContent = isDesktop
+  elements.controlHint.textContent = isPsp
+    ? "Shell provisional sin mockup final. El core corre dentro de una pantalla 16:9 mas cercana al panel real de PSP."
+    : isDesktop
     ? "Sin botones fisicos en pantalla. Este layout prioriza la vista del display, ideal para consolas de sobremesa."
     : isDs
     ? "Flechas o remapeo para DS. La pantalla inferior acepta toque directo con mouse o touch."
     : isGba
     ? "Flechas, Z, X, Enter, Backspace y hombros L/R con A y S."
     : "Flechas, Z, X, Enter y Backspace para la cruceta y botones clasicos.";
-  elements.saveProfile.textContent = isDesktop
+  elements.saveProfile.textContent = isEmulatorJs
     ? "Sin guardado"
     : isDs ? "Guardado DS" : isGba ? "Guardado SRAM" : "Guardado por estado";
-  elements.saveHint.textContent = isDesktop
+  elements.saveHint.textContent = isEmulatorJs
     ? "El core usa sus propias herramientas internas. Los botones de save de esta app siguen reservados para GB, GBA y DS."
     : isDs
     ? "Los saves DS usan archivos del cartucho y almacenamiento del navegador."
     : isGba
     ? "Los slots capturan SRAM del cartucho. Sirve para progreso del juego, no para congelar cada frame."
     : "Los slots guardan save states completos. Vuelves al mismo instante exacto de la emulacion.";
-  elements.toggleMenuBtn.disabled = isDesktop;
-  elements.drawerOverlayBtn.disabled = isDesktop;
-  elements.quickSaveBtn.disabled = isDesktop;
-  elements.quickLoadBtn.disabled = isDesktop;
-  elements.importSaveBtn.disabled = isDesktop;
-  elements.exportSaveBtn.disabled = isDesktop;
-  elements.drawerImportSaveBtn.disabled = isDesktop;
-  elements.drawerExportSaveBtn.disabled = isDesktop;
-  elements.touchControlsToggle.disabled = isDesktop;
-  elements.speedBtn.disabled = isDesktop;
+  elements.toggleMenuBtn.disabled = isEmulatorJs;
+  elements.drawerOverlayBtn.disabled = isEmulatorJs;
+  elements.quickSaveBtn.disabled = isEmulatorJs;
+  elements.quickLoadBtn.disabled = isEmulatorJs;
+  elements.importSaveBtn.disabled = isEmulatorJs;
+  elements.exportSaveBtn.disabled = isEmulatorJs;
+  elements.drawerImportSaveBtn.disabled = isEmulatorJs;
+  elements.drawerExportSaveBtn.disabled = isEmulatorJs;
+  elements.touchControlsToggle.disabled = isEmulatorJs;
+  elements.speedBtn.disabled = isEmulatorJs;
   if (elements.consolePowerBtn) {
     elements.consolePowerBtn.classList.toggle("ready", uiState.awaitingStart);
+    elements.consolePowerBtn.classList.toggle("active", isPlaying());
   }
+  const pspShell = document.querySelector(".console-shell.system-shell--psp");
+  if (pspShell) {
+    pspShell.classList.toggle("is-on", isPlaying());
+  }
+  refreshOnboarding();
   renderSystemToggle();
 }
 
@@ -1813,6 +2322,11 @@ function gbaButtonIndex(button) {
 }
 
 function pressInput(button) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    if (!desktopRuntime.active) return;
+    dispatchEmulatorJsKey(button, "keydown");
+    return;
+  }
   if (uiState.currentSystem === "ds") {
     const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
     if (!key) return;
@@ -1832,6 +2346,11 @@ function pressInput(button) {
 }
 
 function releaseInput(button) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    if (!desktopRuntime.active) return;
+    dispatchEmulatorJsKey(button, "keyup");
+    return;
+  }
   if (uiState.currentSystem === "ds") {
     const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
     if (!key) return;
@@ -1886,6 +2405,118 @@ function afterInput(inputName, extra = "") {
   uiState.lastInput = inputName;
   updateStatus(extra);
   renderStatePanel();
+}
+
+function pulseHardwareControl(buttonElement, duration = 140) {
+  if (!buttonElement) return;
+  buttonElement.classList.add("is-pressed");
+  window.clearTimeout(buttonElement.__pressTimer);
+  buttonElement.__pressTimer = window.setTimeout(() => {
+    buttonElement.classList.remove("is-pressed");
+  }, duration);
+}
+
+function triggerPspAppAction(action) {
+  if (action === "home") {
+    if (uiState.focusMode) {
+      setFocusMode(false);
+      afterInput("home", "HOME salio del modo enfoque.");
+      return;
+    }
+    setDrawerOpen(!uiState.drawerOpen);
+    afterInput("home", uiState.drawerOpen ? "HOME cerro el menu." : "HOME abrio el menu.");
+    return;
+  }
+  if (action === "volume-down" || action === "volume-up") {
+    const delta = action === "volume-down" ? -10 : 10;
+    setVolume(uiState.volume + delta);
+    persistAndRender();
+    afterInput(action, `Volumen ${uiState.volume}%.`);
+  }
+}
+
+function updatePspAnalogDirections(nextDirections) {
+  const previous = pspAnalogState.activeDirections;
+  previous.forEach((direction) => {
+    if (!nextDirections.has(direction)) {
+      releaseInput(direction);
+    }
+  });
+  nextDirections.forEach((direction) => {
+    if (!previous.has(direction)) {
+      pressInput(direction);
+    }
+  });
+  pspAnalogState.activeDirections = new Set(nextDirections);
+}
+
+function resetPspAnalogStick() {
+  updatePspAnalogDirections(new Set());
+  if (elements.pspAnalogKnob) {
+    elements.pspAnalogKnob.style.transform = "";
+  }
+  if (elements.pspAnalogStick) {
+    elements.pspAnalogStick.classList.remove("is-active");
+  }
+  pspAnalogState.pointerId = null;
+}
+
+function bindPspAnalogStick() {
+  if (!elements.pspAnalogStick || elements.pspAnalogStick.dataset.bound) return;
+  elements.pspAnalogStick.dataset.bound = "true";
+
+  const maxOffset = 9;
+  const threshold = 0.45;
+
+  const updateFromPointer = (event) => {
+    if (pspAnalogState.pointerId !== event.pointerId) return;
+    const rect = elements.pspAnalogStick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
+    const nx = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
+    const ny = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
+    const nextDirections = new Set();
+
+    if (nx <= -threshold) nextDirections.add("left");
+    if (nx >= threshold) nextDirections.add("right");
+    if (ny <= -threshold) nextDirections.add("up");
+    if (ny >= threshold) nextDirections.add("down");
+
+    updatePspAnalogDirections(nextDirections);
+
+    if (elements.pspAnalogKnob) {
+      elements.pspAnalogKnob.style.transform = `translate(${Math.round(nx * maxOffset)}px, ${Math.round(ny * maxOffset)}px)`;
+    }
+  };
+
+  const onPointerMove = (event) => {
+    event.preventDefault();
+    updateFromPointer(event);
+  };
+
+  const onPointerEnd = (event) => {
+    if (pspAnalogState.pointerId !== event.pointerId) return;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerEnd);
+    window.removeEventListener("pointercancel", onPointerEnd);
+    resetPspAnalogStick();
+  };
+
+  elements.pspAnalogStick.addEventListener("pointerdown", (event) => {
+    if (!isReady()) {
+      updateStatus("Carga una ROM primero.");
+      return;
+    }
+    event.preventDefault();
+    pspAnalogState.pointerId = event.pointerId;
+    elements.pspAnalogStick.classList.add("is-active");
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerEnd);
+    window.addEventListener("pointercancel", onPointerEnd);
+    updateFromPointer(event);
+  });
 }
 
 function gbcSaveSlotName(slot) {
@@ -2063,15 +2694,16 @@ async function loadDsRom(file) {
   renderStatePanel();
 }
 
-async function loadDesktopRom(file, system) {
+async function loadDesktopRom(file, system, meta = {}) {
   setCurrentSystem(system);
   uiState.loadedRom = {
-    name: file.name,
-    size: file.size,
+    name: meta.displayName || file.name,
+    size: meta.displaySize || file.size,
   };
   uiState.lastInput = "rom_loaded";
   uiState.paused = false;
-  desktopRuntime.pendingLaunch = { system, file };
+  desktopRuntime.pendingLaunch = { system, file, assetUrls: [...(meta.assetUrls || [])] };
+  desktopRuntime.assetObjectUrls = [...(meta.assetUrls || [])];
 
   if (desktopNeedsBios(system) && !hasDesktopBios(system)) {
     uiState.awaitingStart = false;
@@ -2087,34 +2719,44 @@ async function loadDesktopRom(file, system) {
     return;
   }
 
-  await startDesktopRuntime({ system, file });
+  await startDesktopRuntime({ system, file, assetUrls: meta.assetUrls || [] });
   updateStatus(`Core ${DESKTOP_CORE_CONFIG[system].label} inicializado con EmulatorJS.`);
   renderStatePanel();
 }
 
-async function loadRom(file) {
+async function loadRom(fileList) {
   teardownCurrentEmulator();
   uiState.awaitingStart = false;
-  const target = resolveTargetSystem(file);
+  const files = Array.isArray(fileList) ? fileList : [fileList].filter(Boolean);
+  const primaryFile = getPrimaryFile(files);
+  const target = resolveTargetSystem(files);
+  if (!target.system || target.ambiguous) {
+    throw new Error("No pude resolver el sistema de esta ROM. Si la extension es ambigua, elige el sistema manualmente y vuelve a subirla.");
+  }
   if (target.forcedByRom) {
     uiState.systemPreference = target.system;
     persistAndRender();
     updateStatus(`La ROM cambio el sistema a ${target.system.toUpperCase()} automaticamente.`);
   }
   if (target.system === "gba") {
-    await loadGbaRom(file);
+    await loadGbaRom(primaryFile);
   } else if (target.system === "ds") {
-    await loadDsRom(file);
-  } else if (DESKTOP_SYSTEMS.has(target.system)) {
-    await loadDesktopRom(file, target.system);
+    await loadDsRom(primaryFile);
+  } else if (EMULATORJS_SYSTEMS.has(target.system)) {
+    if (target.system === "ps1" && getFileExtension(primaryFile.name) === "cue") {
+      const bundledCue = await buildPs1CueBundle(files);
+      await loadDesktopRom(bundledCue.launchFile, target.system, bundledCue);
+    } else {
+      await loadDesktopRom(primaryFile, target.system);
+    }
   } else {
-    await loadGbcRom(file);
+    await loadGbcRom(primaryFile);
   }
 }
 
 function saveToSlot(slot) {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
-    updateStatus("SNES, N64 y PS1 usan el gestor interno del core web para saves.");
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    updateStatus("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
     return;
   }
   if (!isReady()) {
@@ -2149,8 +2791,8 @@ function saveToSlot(slot) {
 }
 
 function loadFromSlot(slot) {
-  if (DESKTOP_SYSTEMS.has(uiState.currentSystem)) {
-    updateStatus("SNES, N64 y PS1 usan el gestor interno del core web para saves.");
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    updateStatus("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
     return;
   }
   if (!isReady()) {
@@ -2253,10 +2895,10 @@ window.render_game_to_text = function () {
           hasSave: !!gbaCore.mmu.save,
           canvas: { width: elements.canvas.width, height: elements.canvas.height },
         }
-      : DESKTOP_SYSTEMS.has(system)
+      : EMULATORJS_SYSTEMS.has(system)
         ? {
             active: desktopRuntime.active,
-            family: "desktop",
+            family: system === "psp" ? "handheld" : "desktop",
             requiresBios: desktopNeedsBios(system),
             biosLoaded: hasDesktopBios(system),
             canvas: elements.canvas ? { width: elements.canvas.width, height: elements.canvas.height } : null,
@@ -2342,16 +2984,30 @@ function bindInputButton(buttonElement) {
       return;
     }
     buttonElement.__inputGuardUntil = now + 120;
-    buttonElement.classList.add("is-pressed");
-    window.setTimeout(() => {
-      buttonElement.classList.remove("is-pressed");
-    }, 120);
+    pulseHardwareControl(buttonElement, 120);
     holdButton(button, 85);
     afterInput(button);
   };
 
   buttonElement.addEventListener("pointerdown", triggerInput);
-  buttonElement.addEventListener("click", triggerInput);
+  buttonElement.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    triggerInput(event);
+  });
+}
+
+function bindPspAppButton(buttonElement) {
+  const action = buttonElement.dataset.appAction;
+  const triggerAction = (event) => {
+    event.preventDefault();
+    pulseHardwareControl(buttonElement, 140);
+    triggerPspAppAction(action);
+  };
+  buttonElement.addEventListener("pointerdown", triggerAction);
+  buttonElement.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    triggerAction(event);
+  });
 }
 
 function bindDynamicElements() {
@@ -2393,6 +3049,14 @@ function bindDynamicElements() {
     button.dataset.bound = "true";
     bindInputButton(button);
   });
+
+  elements.pspAppButtons.forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "true";
+    bindPspAppButton(button);
+  });
+
+  bindPspAnalogStick();
 }
 
 loadPrefs();
@@ -2418,7 +3082,7 @@ elements.systemToggleButtons.forEach((button) => {
     updateStatus(
       uiState.systemPreference === "auto"
         ? "Modo automatico activo. La ROM decide el sistema."
-        : DESKTOP_SYSTEMS.has(uiState.systemPreference)
+        : EMULATORJS_SYSTEMS.has(uiState.systemPreference)
           ? `Modo manual ${uiState.systemPreference.toUpperCase()} activo. Esperando una ROM compatible para lanzar el core web.`
         : `Modo manual ${uiState.systemPreference.toUpperCase()} activo.`,
     );
@@ -2426,21 +3090,24 @@ elements.systemToggleButtons.forEach((button) => {
 });
 
 elements.romInput.addEventListener("change", async (event) => {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
+  const files = [...(event.target.files || [])];
+  if (files.length === 0) return;
 
-  const validationError = validateRomFile(file);
+  const validationError = validateRomSelection(files);
   if (validationError) {
     updateStatus(validationError);
+    event.target.value = "";
     return;
   }
 
   try {
-    await loadRom(file);
+    await loadRom(files);
     persistPrefs();
   } catch (error) {
     console.error(error);
     updateStatus(`No se pudo cargar la ROM: ${error.message}`);
+  } finally {
+    event.target.value = "";
   }
 });
 
@@ -2726,6 +3393,7 @@ elements.cheatForm.addEventListener("submit", addCheat);
 window.addEventListener("message", (event) => {
   if (event.data?.type !== "desktop-frame-ready") return;
   if (!desktopRuntime.iframe || event.data.system !== uiState.currentSystem) return;
+  sendDesktopCommand("set-volume", uiState.volume / 100);
   desktopRuntime.iframe.focus();
 });
 window.setInterval(() => {

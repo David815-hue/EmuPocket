@@ -26,12 +26,26 @@
             sea el foco principal.
           </p>
           <p id="status-line" class="status-line">Esperando una ROM local.</p>
+          <section class="onboarding-strip" id="onboarding-strip" aria-label="Primeros pasos">
+            <div class="onboarding-card" data-onboarding-step="rom">
+              <strong>1. Sube ROM</strong>
+              <span id="onboarding-rom-copy">Acepta archivo suelto o pack `PS1 .cue + .bin`.</span>
+            </div>
+            <div class="onboarding-card" data-onboarding-step="system">
+              <strong>2. Elige sistema</strong>
+              <span id="onboarding-system-copy">Usa los toggles si la extension es ambigua como `.iso` o `.pbp`.</span>
+            </div>
+            <div class="onboarding-card" data-onboarding-step="bios">
+              <strong>3. BIOS si hace falta</strong>
+              <span id="onboarding-bios-copy">Solo `PS1` pide BIOS local de sesion antes de jugar.</span>
+            </div>
+          </section>
         </div>
 
         <div class="topbar">
           <div class="quick-actions" aria-label="Acciones rapidas">
             <label class="upload-btn" for="rom-input">Subir ROM</label>
-            <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds,.smc,.sfc,.fig,.bs,.z64,.n64,.v64,.bin,.img,.pbp,.cue,.chd,.iso" />
+            <input id="rom-input" type="file" multiple accept=".gb,.gbc,.gba,.nds,.smc,.sfc,.fig,.bs,.z64,.n64,.v64,.bin,.img,.pbp,.cue,.chd,.iso,.cso,.elf" />
             <button id="power-btn" type="button">Pausar</button>
             <button id="speed-btn" type="button">Velocidad x1</button>
             <button id="fullscreen-btn" type="button">Pantalla completa</button>
@@ -45,6 +59,7 @@
               <button type="button" class="system-toggle-btn" data-system-toggle="snes" style="border-radius:0;">SNES</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="n64" style="border-radius:0;">N64</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="ps1" style="border-radius:0;">PS1</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="psp" style="border-radius:0;">PSP</button>
             </div>
             <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
               Menu
@@ -77,6 +92,7 @@
               <button type="button" class="system-toggle-btn" data-system-toggle="snes">SNES</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="n64">N64</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="ps1">PS1</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="psp">PSP</button>
             </div>
 
             <div class="console-topline" style="justify-content: center;">
