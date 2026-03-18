@@ -40,13 +40,19 @@ body[data-theme="graphite"] {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Bahnschrift, "Trebuchet MS", sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(255, 209, 111, 0.34), transparent 26%),
-    radial-gradient(circle at right, rgba(79, 153, 180, 0.12), transparent 22%),
+    radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 40%),
     linear-gradient(135deg, var(--bg), var(--bg-accent));
-  transition: background 260ms ease, color 200ms ease;
+  background-attachment: fixed;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+body.focus-mode {
+  background: #000 !important;
+  transition: background 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 body.drawer-open {
@@ -63,19 +69,30 @@ textarea {
 
 button,
 .upload-btn {
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  padding: 12px 18px;
-  background: linear-gradient(180deg, var(--ink), #0c1216);
+  padding: 12px 20px;
+  background: linear-gradient(180deg, rgba(23, 32, 39, 0.8), rgba(12, 18, 22, 0.9));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.15);
   color: #fff;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, background 180ms ease;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backdrop-filter: blur(8px);
 }
 
 button:hover,
 .upload-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(17, 25, 30, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(35, 45, 53, 0.85), rgba(18, 26, 32, 0.95));
+}
+
+button:active,
+.upload-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 button:disabled {
@@ -89,11 +106,22 @@ input,
 select {
   width: 100%;
   margin-top: 8px;
-  padding: 11px 12px;
-  border: 1px solid rgba(23, 32, 39, 0.14);
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.6);
   color: var(--ink);
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(239, 125, 87, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 input[type="range"] {
@@ -121,23 +149,39 @@ input[type="range"] {
 }
 
 .app-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
-  align-items: end;
-  padding: 20px 22px;
-  margin-bottom: 22px;
-  background: rgba(250, 246, 234, 0.48);
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 32px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 16px 42px rgba(26, 40, 48, 0.08);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+body.focus-mode .app-header {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
 }
 
 .topbar {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  justify-items: end;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .eyebrow {
@@ -149,9 +193,12 @@ input[type="range"] {
 }
 
 .app-copy h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  line-height: 0.96;
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1;
 }
 
 .intro,
@@ -183,6 +230,11 @@ input[type="range"] {
 }
 
 .quick-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
   padding: 8px;
   border-radius: 999px;
   background: rgba(17, 25, 30, 0.08);
@@ -218,18 +270,100 @@ input[type="range"] {
 .console-zone {
   display: flex;
   justify-content: center;
+  perspective: 1000px;
 }
 
 .console-stage {
   width: min(920px, 100%);
   position: relative;
-  transition: transform 260ms ease, filter 260ms ease;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
+  z-index: 10;
+  transform-origin: center center;
 }
 
 body.system-switching .console-stage {
-  transform: scale(0.985) rotate(-0.4deg);
-  filter: saturate(1.08);
+  transform: scale(0.95) rotateY(2deg);
+  filter: saturate(1.1) brightness(1.1);
+  opacity: 0.8;
 }
+
+body.focus-mode .console-zone {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000 !important;
+  align-items: center;
+  overflow: hidden;
+}
+
+body.focus-mode .console-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ============================================================
+   FOCUS MODE - GBA FIX
+   GBA uses --gba-shell-scale CSS variable (default: 0.44) and
+   zoom to scale the container. We override this to fill the screen.
+   Viewport test was 479x768. Container #gbasp ≈ 640px×1168px.
+   Zoom to fill: min(768/1168, 479/640) = min(0.66, 0.75) → ~0.66
+   Use a responsive calc to always fill without overflow.
+   ============================================================ */
+body.focus-mode[data-system="gba"] .console-shell-host {
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+body.focus-mode[data-system="gba"] .console-shell.system-shell--gba {
+  --gba-shell-scale: min(calc(100vh / 1168px), calc(100vw / 640px)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  font-size: clamp(4.8px, 0.45vw, 6px) !important;
+  align-items: center !important;
+}
+
+/* ============================================================
+   FOCUS MODE - DS FIX
+   DS container has position:absolute top:-200px which clips
+   when the zone is position:fixed starting at y=0.
+   Fix: push the console-stage down by 200px (padding-top) so
+   the container's -200px offset still shows on screen.
+   ============================================================ */
+body.focus-mode .console-zone {
+  overflow: visible !important;
+}
+
+body.focus-mode[data-system="ds"] .console-stage {
+  padding-top: 200px !important;
+}
+
+body.focus-mode[data-system="ds"] .console-shell-host {
+  overflow: visible !important;
+  min-height: 700px !important;
+  height: 700px !important;
+  position: relative !important;
+}
+
+body.focus-mode[data-system="ds"] .console-shell.system-shell--ds {
+  height: 700px !important;
+  position: relative !important;
+}
+
+body.focus-mode[data-system="ds"] .console-shell.system-shell--ds div.container {
+  top: -200px !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  position: absolute !important;
+}
+
+body.focus-mode[data-system="gbc"] .console-stage { transform: scale(min(calc(100vh / 600), calc(100vw / 380))); }
+body.focus-mode[data-system="gba"] .console-stage { transform: scale(1); }
+body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc((100vh - 200px) / 700), calc(100vw / 500))); }
+
 
 .console-topline,
 .panel-heading,
@@ -244,6 +378,19 @@ body.system-switching .console-stage {
 
 .console-topline {
   margin-bottom: 14px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.console-dock {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+body.focus-mode .console-topline,
+body.focus-mode .console-dock {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  position: absolute;
 }
 
 .brand-chip,
@@ -758,6 +905,7 @@ body[data-system="gbc"] .gbc-mockup-ui .controls .a-b .b {
         text-shadow:0px -1px 1px #888;
         color:#2c313e;
         text-align:center;
+        user-select:none;
         -webkit-user-select:none;
         cursor:pointer;
         transition:box-shadow 0.1s ease-out, border 0.1s ease-out, line-height 0.2s ease-out;
@@ -2891,15 +3039,16 @@ body[data-system="gba"] .power-light.secondary {
   right: 14px;
   bottom: 14px;
   width: var(--drawer-width);
-  padding: 18px;
+  padding: 24px 20px;
   overflow-y: auto;
-  background: rgba(29, 24, 20, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 20, 25, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 34px;
-  backdrop-filter: blur(18px);
-  box-shadow: -16px 0 44px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(32px) saturate(150%);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  box-shadow: -8px 0 44px rgba(0, 0, 0, 0.3), inset 1px 1px 3px rgba(255, 255, 255, 0.05);
   transform: translateX(calc(100% + 22px));
-  transition: transform 220ms ease;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 24;
 }
 
@@ -2927,12 +3076,13 @@ body.drawer-open .dashboard {
 }
 
 .panel-block {
-  padding: 20px;
-  margin-bottom: 14px;
-  background: rgba(250, 246, 234, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 28px;
+  padding: 24px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
   color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .keymap-grid {
@@ -3931,83 +4081,7 @@ body[data-system="gbc"] #screen-wrap:fullscreen .menu-overlay,
   inset: 0;
 }
 
-.console-shell.system-shell--ds .container:fullscreen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  width: 100vw;
-  height: 100vh;
-  max-width: none;
-  background: #090d14;
-  transform: none !important;
-}
-
-.console-shell.system-shell--ds .container:fullscreen .topbody,
-.console-shell.system-shell--ds .container:fullscreen .midbar,
-.console-shell.system-shell--ds .container:fullscreen .botbody {
-  width: auto;
-  height: auto;
-  margin: 0 !important;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-.console-shell.system-shell--ds .container:fullscreen .inner-topbody,
-.console-shell.system-shell--ds .container:fullscreen .dark-inner-top,
-.console-shell.system-shell--ds .container:fullscreen .dark-inner-bot {
-  width: auto;
-  height: auto;
-  margin: 0 !important;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  border-radius: 0;
-}
-
-.console-shell.system-shell--ds .container:fullscreen .circle-box-left,
-.console-shell.system-shell--ds .container:fullscreen .circle-box-right,
-.console-shell.system-shell--ds .container:fullscreen .black-square,
-.console-shell.system-shell--ds .container:fullscreen .buttons-box,
-.console-shell.system-shell--ds .container:fullscreen .set-button-box,
-.console-shell.system-shell--ds .container:fullscreen .cross-box,
-.console-shell.system-shell--ds .container:fullscreen .midbar-line,
-.console-shell.system-shell--ds .container:fullscreen .battery-light,
-.console-shell.system-shell--ds .container:fullscreen .mic-hole,
-.console-shell.system-shell--ds .container:fullscreen .mic-text {
-  display: none !important;
-}
-
-.console-shell.system-shell--ds .container:fullscreen .screen-outer,
-.console-shell.system-shell--ds .container:fullscreen .screen-inner {
-  position: static;
-  width: auto;
-  height: auto;
-  margin: 0 !important;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-.console-shell.system-shell--ds .container:fullscreen .topbody,
-.console-shell.system-shell--ds .container:fullscreen .botbody {
-  display: block;
-  position: static;
-}
-
-.console-shell.system-shell--ds .container:fullscreen #ds-top-screen,
-.console-shell.system-shell--ds .container:fullscreen #ds-bottom-screen {
-  display: block;
-  width: min(100vw, calc((100vh - 40px) * (256 / 384)));
-  height: auto;
-  max-height: calc((100vh - 40px) / 2);
-  margin: 10px auto;
-  border-radius: 0;
-  background: #0b1117;
-}
+/* Removed legacy DS :fullscreen logic that broke Focus Mode */
 
 .fullscreen-stage {
   position: fixed;
@@ -4053,4 +4127,68 @@ body.emulation-fullscreen[data-fullscreen-system="ds"] .fullscreen-stage #ds-bot
   width: min(calc(100vw - 40px), calc((100vh - 60px) * (256 / 384)));
   height: auto;
   max-height: calc((100vh - 60px) / 2);
+}
+
+/* --- OVERRIDES TO FIX MOCKUP GLITCHES IN FOCUS MODE --- */
+body.focus-mode .console-shell-host,
+body.focus-mode .console-shell.system-shell--gbc,
+body.focus-mode .console-shell.system-shell--gba,
+body.focus-mode .console-shell.system-shell--ds {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body[data-system=\"ds\"] .console-shell-host {
+  overflow: visible !important;
+  min-height: auto !important;
+}
+
+/* The shell host must never clip the DS which is taller than 920px */
+body[data-system=\"ds\"] .console-shell-host {
+  min-height: min(920px, calc(100vh - 200px)) !important;
+}
+
+/* --- FIX: focus-bar always shows due to display:flex overriding hidden attribute --- */
+.focus-bar[hidden] {
+  display: none !important;
+}
+
+/* --- System toggle positioned above the console --- */
+.console-system-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 14px;
+}
+
+.console-system-toggle .system-toggle-btn {
+  padding: 7px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.55);
+  color: var(--ink);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.console-system-toggle .system-toggle-btn:first-child {
+  border-radius: 10px 0 0 10px;
+}
+.console-system-toggle .system-toggle-btn:last-child {
+  border-radius: 0 10px 10px 0;
+}
+.console-system-toggle .system-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.console-system-toggle .system-toggle-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.85);
+}
+
+body.focus-mode .console-system-toggle {
+  display: none;
 }

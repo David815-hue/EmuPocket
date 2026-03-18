@@ -1319,6 +1319,11 @@ function setFocusMode(nextFocus) {
   uiState.focusMode = nextFocus;
   if (nextFocus) {
     uiState.drawerOpen = false;
+    document.documentElement.requestFullscreen().catch((err) => console.log(err));
+  } else {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch((err) => console.log(err));
+    }
   }
   persistAndRender();
 }
@@ -2087,6 +2092,12 @@ elements.speedBtn.addEventListener("click", () => {
 elements.overlayContext.addEventListener("change", (event) => {
   setOverlayContext(event.target.value);
   persistAndRender();
+});
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && uiState.focusMode) {
+    setFocusMode(false);
+  }
 });
 
 elements.overlayAutoFollow.addEventListener("change", (event) => {
