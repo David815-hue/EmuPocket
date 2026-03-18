@@ -327,42 +327,51 @@ body.focus-mode[data-system="gba"] .console-shell.system-shell--gba {
 
 /* ============================================================
    FOCUS MODE - DS FIX
-   DS container has position:absolute top:-200px which clips
-   when the zone is position:fixed starting at y=0.
-   Fix: push the console-stage down by 200px (padding-top) so
-   the container's -200px offset still shows on screen.
+   The DS mockup uses position:absolute top:-200px on .container
+   as a visual offset for normal view. In focus mode (position:fixed
+   parent starting at y=0), this pushes it 200px above the viewport.
+   Simple fix: reset top to 0 and make height explicit so bottom:0 works.
    ============================================================ */
 body.focus-mode .console-zone {
   overflow: visible !important;
 }
 
-body.focus-mode[data-system="ds"] .console-stage {
-  padding-top: 200px !important;
-}
-
 body.focus-mode[data-system="ds"] .console-shell-host {
   overflow: visible !important;
-  min-height: 700px !important;
-  height: 700px !important;
+  min-height: 850px !important;
+  height: 850px !important;
   position: relative !important;
 }
 
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds {
-  height: 700px !important;
+  height: 850px !important;
   position: relative !important;
 }
 
+/* Reset the -200px offset — it's a design trick for normal mode only */
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds div.container {
-  top: -200px !important;
+  top: 0 !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
   position: absolute !important;
+  transform: none !important;
+  transform-origin: top center !important;
+  width: 500px !important;
+  height: 795px !important;
+  margin: 0 auto !important;
 }
 
 body.focus-mode[data-system="gbc"] .console-stage { transform: scale(min(calc(100vh / 600), calc(100vw / 380))); }
 body.focus-mode[data-system="gba"] .console-stage { transform: scale(1); }
-body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc((100vh - 200px) / 700), calc(100vw / 500))); }
+body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc(100vh / 850), calc(100vw / 500))); }
+
+body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .topbody,
+body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .midbar,
+body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .botbody {
+  margin: 0 !important;
+}
+
 
 
 .console-topline,
@@ -1775,23 +1784,24 @@ body[data-system="gba"] .power-corner {
 }
 
 body[data-system="gba"] .screen-wrap {
-  width: calc(100% - 32px);
-  max-width: 520px;
-  margin: 16px auto 0;
-  padding: 22px 22px 56px;
-  border-radius: 16px;
-  background: #333;
-  border: 4px solid #9999ff;
-  border-top-color: #06065f;
-  border-right-color: #1111af;
-  border-bottom-color: #6e6eff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
 body[data-system="gba"] #screen {
   width: 100%;
-  aspect-ratio: 240 / 160;
+  height: 100%;
+  display: block;
+  aspect-ratio: auto;
   border: 0;
   border-radius: 0;
   background: #777788;
@@ -1799,7 +1809,7 @@ body[data-system="gba"] #screen {
 }
 
 body[data-system="gba"] .screen-wrap.scanlines::after {
-  inset: 22px 22px 56px;
+  inset: 0;
   border-radius: 0;
 }
 
@@ -4096,10 +4106,17 @@ body.emulation-fullscreen .fullscreen-stage {
   justify-content: center;
 }
 
-body.emulation-fullscreen[data-fullscreen-system="ds"] .fullscreen-stage {
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="screens"] .fullscreen-stage {
   flex-direction: column;
   gap: 18px;
   padding: 20px;
+  align-items: center;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage {
+  padding: 0;
+  overflow: hidden;
+  align-items: flex-start;
 }
 
 body.emulation-fullscreen .fullscreen-stage canvas {
@@ -4122,11 +4139,81 @@ body.emulation-fullscreen[data-fullscreen-system="gbc"] .fullscreen-stage #scree
   max-height: 100vh;
 }
 
-body.emulation-fullscreen[data-fullscreen-system="ds"] .fullscreen-stage #ds-top-screen,
-body.emulation-fullscreen[data-fullscreen-system="ds"] .fullscreen-stage #ds-bottom-screen {
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="screens"] .fullscreen-stage #ds-top-screen,
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="screens"] .fullscreen-stage #ds-bottom-screen {
   width: min(calc(100vw - 40px), calc((100vh - 60px) * (256 / 384)));
   height: auto;
   max-height: calc((100vh - 60px) / 2);
+  background: linear-gradient(135deg, #706e70 0%, #454545 100%);
+  box-shadow:
+    0 0 0 1px rgba(72, 72, 72, 0.9),
+    0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell {
+  position: relative !important;
+  width: 520px !important;
+  height: 551px !important;
+  min-height: 0 !important;
+  display: block !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .container {
+  position: absolute !important;
+  width: 520px !important;
+  height: 707px !important;
+  margin: 0 !important;
+  top: -200px !important;
+  bottom: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  transform-origin: top center !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .topbody {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: auto !important;
+  width: 500px !important;
+  height: 250px !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .midbar {
+  top: 275px !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: auto !important;
+  width: 500px !important;
+  height: 25px !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .botbody {
+  top: 545px !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: auto !important;
+  width: 500px !important;
+  height: 250px !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell #ds-top-screen,
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell #ds-bottom-screen {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .topbody,
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .midbar,
+body.emulation-fullscreen[data-fullscreen-system="ds"][data-fullscreen-mode="shell"] .fullscreen-stage .fullscreen-ds-shell .botbody {
+  position: absolute !important;
 }
 
 /* --- OVERRIDES TO FIX MOCKUP GLITCHES IN FOCUS MODE --- */

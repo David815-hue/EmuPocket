@@ -446,21 +446,38 @@ function cleanupEmulationFullscreen() {
   if (elements.body) {
     elements.body.classList.remove("emulation-fullscreen");
     delete elements.body.dataset.fullscreenSystem;
+    delete elements.body.dataset.fullscreenMode;
   }
 }
 
-function moveNodeToFullscreen(node) {
-  const stage = elements.fullscreenStage;
-  if (!stage || !node || !node.parentNode) return;
+function moveNodeToFullscreen(node, targetParent = elements.fullscreenStage) {
+  if (!targetParent || !node || !node.parentNode) return;
   fullscreenState.moved.push({
     node,
     parent: node.parentNode,
     nextSibling: node.nextSibling,
   });
-  stage.appendChild(node);
+  targetParent.appendChild(node);
 }
 
-async function enterEmulationFullscreen() {
+function fitDsShellInFullscreen(shell) {
+  if (!shell) return;
+  const horizontalGutter = 0;
+  const verticalGutter = 0;
+  const visibleDsWidth = 500;
+  const visibleDsHeight = 522;
+  const visibleTopInset = 29;
+  const scale = Math.min(
+    (window.innerWidth - horizontalGutter) / visibleDsWidth,
+    (window.innerHeight - verticalGutter) / visibleDsHeight
+  );
+  const nextScale = Math.max(scale, 0.1);
+  shell.style.transform = `scale(${nextScale})`;
+  shell.style.transformOrigin = "top center";
+  shell.style.marginTop = `${Math.round(-visibleTopInset * nextScale)}px`;
+}
+
+async function enterEmulationFullscreen(mode = "screens") {
   const stage = elements.fullscreenStage || document.querySelector("#fullscreen-stage");
   if (!stage) return;
 
@@ -471,11 +488,23 @@ async function enterEmulationFullscreen() {
   if (elements.body) {
     elements.body.classList.add("emulation-fullscreen");
     elements.body.dataset.fullscreenSystem = uiState.currentSystem;
+    elements.body.dataset.fullscreenMode = mode;
   }
 
   if (uiState.currentSystem === "ds") {
-    moveNodeToFullscreen(elements.dsTopCanvas);
-    moveNodeToFullscreen(elements.dsBottomCanvas);
+    if (mode === "shell") {
+      const dsContainer = document.querySelector(".console-shell.system-shell--ds .container");
+      if (dsContainer) {
+        const dsShell = document.createElement("div");
+        dsShell.className = "console-shell system-shell--ds fullscreen-ds-shell";
+        stage.appendChild(dsShell);
+        moveNodeToFullscreen(dsContainer, dsShell);
+        fitDsShellInFullscreen(dsShell);
+      }
+    } else {
+      moveNodeToFullscreen(elements.dsTopCanvas);
+      moveNodeToFullscreen(elements.dsBottomCanvas);
+    }
   } else {
     moveNodeToFullscreen(elements.canvas);
   }
@@ -1106,7 +1135,7 @@ function applyVisualPrefs() {
   elements.body.dataset.system = uiState.currentSystem;
   elements.body.dataset.filter = uiState.filterMode;
   elements.body.classList.toggle("drawer-open", uiState.drawerOpen);
-  elements.body.classList.toggle("focus-mode", uiState.focusMode);
+  elements.body.classList.toggle("focus-mode", uiState.focusMode && uiState.currentSystem !== "ds");
   elements.body.classList.toggle("touch-visible", uiState.touchControls);
   elements.body.style.setProperty("--filter-intensity", String(uiState.filterIntensity / 100));
   elements.menuOverlay.style.setProperty("--overlay-alpha", String(uiState.overlayOpacity / 100));
@@ -1317,13 +1346,22 @@ function setDrawerOpen(nextOpen) {
 
 function setFocusMode(nextFocus) {
   uiState.focusMode = nextFocus;
-  if (nextFocus) {
-    uiState.drawerOpen = false;
-    document.documentElement.requestFullscreen().catch((err) => console.log(err));
-  } else {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch((err) => console.log(err));
+  uiState.drawerOpen = false;
+
+  if (uiState.currentSystem === "ds") {
+    persistAndRender();
+    if (nextFocus) {
+      enterEmulationFullscreen("shell").catch((err) => console.log(err));
+    } else {
+      exitEmulationFullscreen().catch((err) => console.log(err));
     }
+    return;
+  }
+
+  if (nextFocus) {
+    document.documentElement.requestFullscreen().catch((err) => console.log(err));
+  } else if (document.fullscreenElement) {
+    document.exitFullscreen().catch((err) => console.log(err));
   }
   persistAndRender();
 }
@@ -1979,7 +2017,11 @@ document.addEventListener("keydown", (event) => {
   }
   if (key === "escape" && fullscreenState.active) {
     event.preventDefault();
-    exitEmulationFullscreen();
+    if (uiState.focusMode) {
+      setFocusMode(false);
+    } else {
+      exitEmulationFullscreen();
+    }
     return;
   }
   if (key === "escape" && uiState.focusMode) {
@@ -2074,13 +2116,17 @@ elements.fullscreenBtn.addEventListener("click", () => {
   toggleFullscreen();
 });
 
-elements.focusModeBtn.addEventListener("click", () => {
-  setFocusMode(!uiState.focusMode);
-});
+if (elements.focusModeBtn) {
+  elements.focusModeBtn.addEventListener("click", () => {
+    setFocusMode(!uiState.focusMode);
+  });
+}
 
-elements.focusExitBtn.addEventListener("click", () => {
-  setFocusMode(false);
-});
+if (elements.focusExitBtn) {
+  elements.focusExitBtn.addEventListener("click", () => {
+    setFocusMode(false);
+  });
+}
 
 elements.speedBtn.addEventListener("click", () => {
   uiState.speed = uiState.speed === 1 ? 2 : uiState.speed === 2 ? 4 : 1;
@@ -2218,5 +2264,5 @@ async function toggleFullscreen() {
     await exitEmulationFullscreen();
     return;
   }
-  await enterEmulationFullscreen();
+  await enterEmulationFullscreen("screens");
 }
