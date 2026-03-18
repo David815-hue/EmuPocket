@@ -21,7 +21,8 @@ const defaultKeyBindings = {
 const defaultPrefs = {
   systemPreference: "auto",
   drawerOpen: false,
-  startWithButton: true,
+  focusMode: false,
+  startWithButton: false,
   overlayVisible: false,
   overlayContext: "battle-root",
   overlayAutoFollow: true,
@@ -39,6 +40,10 @@ const defaultPrefs = {
 };
 
 const elements = {};
+const fullscreenState = {
+  active: false,
+  moved: [],
+};
 
 const gbcSpeakerDots = `
   <div class="dot placeholder"></div>
@@ -361,6 +366,7 @@ function refreshElements() {
   elements.dsBottomCanvas = document.querySelector("#ds-bottom-screen");
   elements.dsScreens = document.querySelector("#ds-screens");
   elements.screenWrap = document.querySelector("#screen-wrap");
+  elements.fullscreenStage = document.querySelector("#fullscreen-stage");
   elements.screenHint = document.querySelector("#screen-hint");
   elements.romInput = document.querySelector("#rom-input");
   elements.saveFileInput = document.querySelector("#save-file-input");
@@ -376,6 +382,9 @@ function refreshElements() {
   elements.quickMenuBtn = document.querySelector("#quick-menu-btn");
   elements.powerBtn = document.querySelector("#power-btn");
   elements.fullscreenBtn = document.querySelector("#fullscreen-btn");
+  elements.focusModeBtn = document.querySelector("#focus-mode-btn");
+  elements.focusBar = document.querySelector("#focus-bar");
+  elements.focusExitBtn = document.querySelector("#focus-exit-btn");
   elements.speedBtn = document.querySelector("#speed-btn");
   elements.consolePowerBtn = document.querySelector("#console-power-btn");
   elements.importSaveBtn = document.querySelector("#import-save-btn");
@@ -416,6 +425,79 @@ function refreshElements() {
   elements.attackInputs = [...document.querySelectorAll("[data-attack-index]")];
   elements.hardwareButtons = [...document.querySelectorAll("[data-button]")];
   elements.keymapButtons = [...document.querySelectorAll("[data-keymap-action]")];
+}
+
+function cleanupEmulationFullscreen() {
+  const stage = elements.fullscreenStage || document.querySelector("#fullscreen-stage");
+  if (stage) {
+    fullscreenState.moved.forEach(({ node, parent, nextSibling }) => {
+      if (!node || !parent) return;
+      if (nextSibling && nextSibling.parentNode === parent) {
+        parent.insertBefore(node, nextSibling);
+      } else {
+        parent.appendChild(node);
+      }
+    });
+    stage.innerHTML = "";
+    stage.hidden = true;
+  }
+  fullscreenState.moved = [];
+  fullscreenState.active = false;
+  if (elements.body) {
+    elements.body.classList.remove("emulation-fullscreen");
+    delete elements.body.dataset.fullscreenSystem;
+  }
+}
+
+function moveNodeToFullscreen(node) {
+  const stage = elements.fullscreenStage;
+  if (!stage || !node || !node.parentNode) return;
+  fullscreenState.moved.push({
+    node,
+    parent: node.parentNode,
+    nextSibling: node.nextSibling,
+  });
+  stage.appendChild(node);
+}
+
+async function enterEmulationFullscreen() {
+  const stage = elements.fullscreenStage || document.querySelector("#fullscreen-stage");
+  if (!stage) return;
+
+  cleanupEmulationFullscreen();
+  stage.hidden = false;
+  fullscreenState.active = true;
+
+  if (elements.body) {
+    elements.body.classList.add("emulation-fullscreen");
+    elements.body.dataset.fullscreenSystem = uiState.currentSystem;
+  }
+
+  if (uiState.currentSystem === "ds") {
+    moveNodeToFullscreen(elements.dsTopCanvas);
+    moveNodeToFullscreen(elements.dsBottomCanvas);
+  } else {
+    moveNodeToFullscreen(elements.canvas);
+  }
+
+  try {
+    if (!document.fullscreenElement && stage.requestFullscreen) {
+      await stage.requestFullscreen();
+    }
+  } catch (error) {
+    console.warn("No se pudo activar fullscreen nativo", error);
+  }
+}
+
+async function exitEmulationFullscreen() {
+  if (document.fullscreenElement) {
+    try {
+      await document.exitFullscreen();
+    } catch (error) {
+      console.warn("No se pudo salir de fullscreen nativo", error);
+    }
+  }
+  cleanupEmulationFullscreen();
 }
 
 refreshElements();
@@ -490,6 +572,7 @@ function persistPrefs() {
   const payload = {
     systemPreference: uiState.systemPreference,
     drawerOpen: uiState.drawerOpen,
+    focusMode: uiState.focusMode,
     startWithButton: uiState.startWithButton,
     overlayVisible: uiState.overlayVisible,
     overlayContext: uiState.overlayContext,
@@ -562,18 +645,22 @@ function getSystemFromFile(file) {
 function resolveTargetSystem(file) {
   const fileSystem = getSystemFromFile(file);
   if (uiState.systemPreference === "auto") {
-    return fileSystem;
+    return {
+      system: fileSystem,
+      forcedByRom: false,
+    };
   }
   if (uiState.systemPreference !== fileSystem) {
-    throw new Error(
-      uiState.systemPreference === "gba"
-        ? "El modo GBA solo acepta ROMs .gba."
-        : uiState.systemPreference === "ds"
-          ? "El modo DS solo acepta ROMs .nds."
-        : "El modo GB/GBC solo acepta ROMs .gb o .gbc.",
-    );
+    return {
+      system: fileSystem,
+      forcedByRom: true,
+      previousPreference: uiState.systemPreference,
+    };
   }
-  return uiState.systemPreference;
+  return {
+    system: uiState.systemPreference,
+    forcedByRom: false,
+  };
 }
 
 function validateRomFile(file) {
@@ -617,7 +704,7 @@ function parseCheat(addressRaw, valueRaw, labelRaw) {
 
 function setCurrentSystem(system) {
   const shouldRenderShell = uiState.currentSystem !== system
-    || !document.querySelector(`#console-shell-host .system-shell--${system}`);
+    || document.querySelector("#console-shell-host .console-shell")?.dataset.shellSystem !== system;
   if (uiState.currentSystem !== system) {
     elements.body.classList.add("system-switching");
     window.setTimeout(() => {
@@ -1019,14 +1106,18 @@ function applyVisualPrefs() {
   elements.body.dataset.system = uiState.currentSystem;
   elements.body.dataset.filter = uiState.filterMode;
   elements.body.classList.toggle("drawer-open", uiState.drawerOpen);
+  elements.body.classList.toggle("focus-mode", uiState.focusMode);
   elements.body.classList.toggle("touch-visible", uiState.touchControls);
   elements.body.style.setProperty("--filter-intensity", String(uiState.filterIntensity / 100));
   elements.menuOverlay.style.setProperty("--overlay-alpha", String(uiState.overlayOpacity / 100));
   elements.screenWrap.classList.toggle("scanlines", uiState.scanlines);
-  elements.screenHint.classList.toggle("hidden", !uiState.awaitingStart);
-  elements.screenHint.textContent = uiState.loadedRom && uiState.awaitingStart
-    ? "Presiona boton para iniciar"
-    : "Presiona boton para iniciar";
+  const showStartHint = Boolean(uiState.awaitingStart && uiState.loadedRom);
+  elements.screenHint.classList.toggle("hidden", !showStartHint);
+  elements.screenHint.hidden = !showStartHint;
+  elements.screenHint.setAttribute("aria-hidden", String(!showStartHint));
+  elements.screenHint.style.display = showStartHint ? "" : "none";
+  elements.screenHint.style.pointerEvents = showStartHint ? "auto" : "none";
+  elements.screenHint.textContent = showStartHint ? "Presiona boton para iniciar" : "";
   elements.speedBtn.textContent = `Velocidad x${uiState.speed}`;
   const powerLights = document.querySelectorAll(".power-light");
   powerLights.forEach((light) => {
@@ -1040,6 +1131,13 @@ function applyVisualPrefs() {
   if (elements.drawerToggleBtn) {
     elements.drawerToggleBtn.setAttribute("aria-expanded", String(uiState.drawerOpen));
     elements.drawerToggleBtn.textContent = uiState.drawerOpen ? "Cerrar menu" : "Menu";
+  }
+  if (elements.focusModeBtn) {
+    elements.focusModeBtn.textContent = uiState.focusMode ? "Salir enfoque" : "Modo enfoque";
+    elements.focusModeBtn.setAttribute("aria-pressed", String(uiState.focusMode));
+  }
+  if (elements.focusBar) {
+    elements.focusBar.hidden = !uiState.focusMode;
   }
 }
 
@@ -1085,6 +1183,33 @@ function applySpeed() {
   }
 }
 
+function resumeGbcEmulator() {
+  if (!isGbcReady()) return;
+
+  if (typeof window.run === "function") {
+    window.run();
+  }
+
+  if (isPlaying()) return;
+
+  window.gameboy.stopEmulator &= 1;
+  window.gameboy.firstIteration = Date.now();
+  window.gameboy.iterations = 0;
+  window.gameboy.run();
+
+  if (!isPlaying()) return;
+
+  if (window.gbRunInterval) {
+    window.clearInterval(window.gbRunInterval);
+  }
+  const intervalMs = Array.isArray(window.settings) ? window.settings[6] : 8;
+  window.gbRunInterval = window.setInterval(() => {
+    if (!document.hidden && !document.msHidden && !document.mozHidden && !document.webkitHidden) {
+      window.gameboy.run();
+    }
+  }, intervalMs);
+}
+
 function startCurrentEmulator() {
   if (uiState.currentSystem === "ds") {
     if (!isDsReady()) return;
@@ -1098,7 +1223,7 @@ function startCurrentEmulator() {
     return;
   }
   if (isGbcReady()) {
-    window.run();
+    resumeGbcEmulator();
   }
 }
 
@@ -1132,7 +1257,7 @@ function togglePowerState() {
   } else if (isPlaying()) {
     window.pause();
   } else {
-    window.run();
+    resumeGbcEmulator();
   }
 
   afterInput("power_toggle");
@@ -1187,6 +1312,14 @@ function refreshMeta() {
 
 function setDrawerOpen(nextOpen) {
   uiState.drawerOpen = nextOpen;
+  persistAndRender();
+}
+
+function setFocusMode(nextFocus) {
+  uiState.focusMode = nextFocus;
+  if (nextFocus) {
+    uiState.drawerOpen = false;
+  }
   persistAndRender();
 }
 
@@ -1415,13 +1548,9 @@ async function loadGbcRom(file) {
   uiState.paused = false;
   setVolume(uiState.volume);
   applySpeed();
-  uiState.awaitingStart = uiState.startWithButton;
-  if (uiState.startWithButton) {
-    window.pause();
-    updateStatus("ROM lista. Presiona boton para iniciar.");
-  } else {
-    updateStatus("Core GB/GBC inicializado.");
-  }
+  uiState.awaitingStart = false;
+  resumeGbcEmulator();
+  updateStatus("Core GB/GBC inicializado.");
   renderStatePanel();
 }
 
@@ -1441,14 +1570,9 @@ async function loadGbaRom(file) {
   uiState.paused = false;
   setVolume(uiState.volume);
   applySpeed();
-  uiState.awaitingStart = uiState.startWithButton;
-  if (uiState.startWithButton) {
-    core.pause();
-    updateStatus("ROM lista. Presiona boton para iniciar.");
-  } else {
-    core.runStable();
-    updateStatus("Core GBA inicializado.");
-  }
+  uiState.awaitingStart = false;
+  core.runStable();
+  updateStatus("Core GBA inicializado.");
   renderStatePanel();
 }
 
@@ -1492,10 +1616,15 @@ async function loadDsRom(file) {
 async function loadRom(file) {
   teardownCurrentEmulator();
   uiState.awaitingStart = false;
-  const targetSystem = resolveTargetSystem(file);
-  if (targetSystem === "gba") {
+  const target = resolveTargetSystem(file);
+  if (target.forcedByRom) {
+    uiState.systemPreference = target.system;
+    persistAndRender();
+    updateStatus(`La ROM cambio el sistema a ${target.system.toUpperCase()} automaticamente.`);
+  }
+  if (target.system === "gba") {
     await loadGbaRom(file);
-  } else if (targetSystem === "ds") {
+  } else if (target.system === "ds") {
     await loadDsRom(file);
   } else {
     await loadGbcRom(file);
@@ -1843,6 +1972,16 @@ document.addEventListener("keydown", (event) => {
     setDrawerOpen(false);
     return;
   }
+  if (key === "escape" && fullscreenState.active) {
+    event.preventDefault();
+    exitEmulationFullscreen();
+    return;
+  }
+  if (key === "escape" && uiState.focusMode) {
+    event.preventDefault();
+    setFocusMode(false);
+    return;
+  }
   if (key === "f") {
     event.preventDefault();
     toggleFullscreen();
@@ -1928,6 +2067,14 @@ elements.powerBtn.addEventListener("click", () => {
 
 elements.fullscreenBtn.addEventListener("click", () => {
   toggleFullscreen();
+});
+
+elements.focusModeBtn.addEventListener("click", () => {
+  setFocusMode(!uiState.focusMode);
+});
+
+elements.focusExitBtn.addEventListener("click", () => {
+  setFocusMode(false);
 });
 
 elements.speedBtn.addEventListener("click", () => {
@@ -2049,10 +2196,16 @@ window.setInterval(() => {
   renderStatePanel();
 }, 180);
 
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && fullscreenState.active) {
+    cleanupEmulationFullscreen();
+  }
+});
+
 async function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    await document.exitFullscreen();
+  if (fullscreenState.active || document.fullscreenElement) {
+    await exitEmulationFullscreen();
     return;
   }
-  await document.documentElement.requestFullscreen();
+  await enterEmulationFullscreen();
 }

@@ -1519,6 +1519,7 @@ position: absolute;
 
 /* Index-specific fit fixes */
 .console-shell.system-shell--gba {
+  --gba-shell-scale: 0.44;
   font-size: clamp(4.8px, 0.45vw, 6px);
   width: auto;
   height: auto;
@@ -1529,8 +1530,55 @@ position: absolute;
 
 .console-shell.system-shell--gba .system-container#gbasp {
   margin: 8px auto 0;
-  transform: none;
-  zoom: 0.38;
+  transform: scale(var(--gba-shell-scale));
+  transform-origin: top center;
+  width: calc(40rem * var(--gba-shell-scale));
+  height: calc(73rem * var(--gba-shell-scale));
+}
+
+@supports (zoom: 1) {
+  .console-shell.system-shell--gba .system-container#gbasp {
+    transform: none;
+    width: auto;
+    height: auto;
+    zoom: var(--gba-shell-scale);
+  }
+}
+
+@media (max-height: 860px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.4;
+  }
+}
+
+@media (max-height: 760px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.34;
+  }
+}
+
+@media (max-height: 680px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.3;
+  }
+}
+
+@media (max-width: 1080px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.4;
+  }
+}
+
+@media (max-width: 900px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.34;
+  }
+}
+
+@media (max-width: 820px) {
+  .console-shell.system-shell--gba {
+    --gba-shell-scale: 0.3;
+  }
 }
 
 .console-shell.system-shell--gba .system-container#gbasp .screen {
@@ -1555,8 +1603,38 @@ position: absolute;
 }
 
 .console-shell.system-shell--ds .container {
-  transform: scale(0.94);
+  transform: scale(1);
   transform-origin: center center;
+}
+
+@media (max-height: 860px) {
+  .console-shell.system-shell--ds .container {
+    transform: scale(0.92);
+  }
+}
+
+@media (max-height: 760px) {
+  .console-shell.system-shell--ds .container {
+    transform: scale(0.84);
+  }
+}
+
+@media (max-width: 1180px) {
+  .console-shell.system-shell--ds .container {
+    transform: scale(0.92);
+  }
+}
+
+@media (max-width: 980px) {
+  .console-shell.system-shell--ds .container {
+    transform: scale(0.84);
+  }
+}
+
+@media (max-width: 860px) {
+  .console-shell.system-shell--ds .container {
+    transform: scale(0.76);
+  }
 }
 
 /* Layout cleanup */
@@ -1634,17 +1712,26 @@ position: absolute;
   box-shadow: inset 0 0 8px 2px #0a0a0a, 1px 1px 0 0 #545454, -1px -1px 3px 2px #0a0a0a;
 }
 
+.console-shell.system-shell--ds .cross-box {
+  width: 80px;
+  height: 80px;
+  position: absolute;
+  right: 400px;
+  top: 50px;
+}
+
 .console-shell.system-shell--ds .top-cross {
   width: 15px;
   height: 22px;
   background: #222;
   position: absolute;
   z-index: 100;
-  right: 26px;
-  top: 12px;
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-  box-shadow: inset -2px 2px 2px 0 #0a0a0a, -1px -1px 2px 0 #4d4d4d;
+  left: 33px;
+  top: 10px;
+  transition: 200ms;
+  -webkit-box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+  -moz-box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+  box-shadow: inset 0px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
 }
 
 .console-shell.system-shell--ds .left-cross {
@@ -1652,12 +1739,13 @@ position: absolute;
   height: 15px;
   position: absolute;
   z-index: 99;
-  top: 33px;
   left: 12px;
+  top: 30px;
+  transition: 200ms;
+  -webkit-box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+  -moz-box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
+  box-shadow: inset 1px 1px 1px 0px rgba(112, 112, 112, 1), -2px -2px 4px -1px rgba(10, 10, 10, 0.2);
   background: #222;
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 4px;
-  box-shadow: inset 2px 2px 2px 0 #0a0a0a, -1px -1px 2px 0 #4d4d4d;
 }
 
 .console-shell.system-shell--ds .bot-cross {
@@ -1665,12 +1753,14 @@ position: absolute;
   height: 22px;
   background: #222;
   position: absolute;
-  z-index: 97;
+  z-index: 98;
+  left: 12px;
   left: 32px;
-  top: 40px;
-  border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 4px;
-  box-shadow: inset 2px -2px 2px 0 #0a0a0a, 1px 1px 2px 0 #4d4d4d;
+  top: 45px;
+  transition: 200ms;
+  -webkit-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
+  -moz-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
+  box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1), inset 1px 0px 0px 0px rgb(93, 93, 93);
 }
 
 .console-shell.system-shell--ds .right-cross {
@@ -1678,12 +1768,44 @@ position: absolute;
   height: 15px;
   background: #222;
   position: absolute;
+  left: 40px;
+  top: 30px;
   z-index: 98;
-  top: 33px;
-  left: 39px;
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
-  box-shadow: inset -2px -2px 2px 0 #0a0a0a, 1px -1px 2px 0 #4d4d4d;
+  transition: 200ms;
+  -webkit-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+  -moz-box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+  box-shadow: 2px 2px 4px -1px rgba(10, 10, 10, 1);
+}
+
+.console-shell.system-shell--ds .right-cross:hover,
+.console-shell.system-shell--ds .left-cross:hover,
+.console-shell.system-shell--ds .top-cross:hover,
+.console-shell.system-shell--ds .bot-cross:hover {
+  cursor: pointer;
+}
+
+.console-shell.system-shell--ds .left-cross:hover {
+  -webkit-box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+  -moz-box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+  box-shadow: inset 2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+}
+
+.console-shell.system-shell--ds .top-cross:hover {
+  -webkit-box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+  -moz-box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+  box-shadow: inset -2px 2px 2px 0px rgba(10, 10, 10, 1), -1px -1px 2px 0px rgba(77, 77, 77, 1);
+}
+
+.console-shell.system-shell--ds .bot-cross:hover {
+  -webkit-box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+  -moz-box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+  box-shadow: inset 2px -2px 2px 0px rgba(10, 10, 10, 1), 1px 1px 2px 0px rgba(77, 77, 77, 1);
+}
+
+.console-shell.system-shell--ds .right-cross:hover {
+  -webkit-box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
+  -moz-box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
+  box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
 }
 
 

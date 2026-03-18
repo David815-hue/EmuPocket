@@ -8,8 +8,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23284453'/%3E%3Crect x='7' y='6' width='18' height='20' rx='3' fill='%23d8f0cf' stroke='%230d171b' stroke-width='2'/%3E%3Ccircle cx='10' cy='27' r='2' fill='%23ff8b5e'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260317-gba-screenfix" />
-    <link rel="stylesheet" href="./mockups-main.css?v=20260317-gba-screenfix" />
+    <link rel="stylesheet" href="./styles.css?v=20260317-zoom-fullscreen-pass5" />
+    <link rel="stylesheet" href="./mockups-main.css?v=20260317-zoom-fullscreen-pass5" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   </head>
   <body data-theme="teal" data-system="gbc">
@@ -32,6 +32,7 @@
             <button id="power-btn" type="button">Pausar</button>
             <button id="speed-btn" type="button">Velocidad x1</button>
             <button id="fullscreen-btn" type="button">Pantalla completa</button>
+            <button id="focus-mode-btn" type="button">Modo enfoque</button>
             <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
               Menu
             </button>
@@ -48,6 +49,11 @@
       <section class="play-layout">
         <div class="console-zone">
           <div class="console-stage">
+            <div class="focus-bar" id="focus-bar" hidden>
+              <span class="focus-chip">Enfoque activo</span>
+              <button id="focus-exit-btn" type="button">Salir enfoque</button>
+            </div>
+
             <div class="console-topline">
               <div class="brand-chip" id="brand-chip">Pocket Codex Color</div>
               <div class="topline-pills">
@@ -300,6 +306,7 @@
         </aside>
       </section>
     </main>
+    <div id="fullscreen-stage" class="fullscreen-stage" hidden aria-hidden="true"></div>
 
     <script src="./vendor/gameboy-online/js/other/base64.js"></script>
     <script src="./vendor/gameboy-online/js/other/resampler.js"></script>
@@ -324,6 +331,6 @@
     <script src="./vendor/gba-js/js/gba.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
-    <script src="./src/app.js?v=20260317-gba-screenfix"></script>
+    <script src="./src/app.js?v=20260317-screenhint-fix"></script>
   </body>
 </html>
