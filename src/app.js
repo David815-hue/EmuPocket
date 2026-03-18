@@ -4,7 +4,9 @@ const GBA_SAVE_PREFIX = "GBA_SAVE_SLOT_";
 const GBA_BIOS_URL = "./vendor/gba-js/resources/bios.bin";
 const DESKTOP_SYSTEMS = new Set(["snes", "n64", "ps1"]);
 const EMULATORJS_SYSTEMS = new Set([...DESKTOP_SYSTEMS, "psp"]);
-const CLOUD_SUPPORTED_SYSTEMS = new Set(["gbc", "gba", "ds"]);
+const CLOUD_SUPPORTED_SYSTEMS = new Set(["gbc", "gba", "ds", ...EMULATORJS_SYSTEMS]);
+const LIBRARY_MAX_ITEMS = 10;
+const DESKTOP_CLOUD_SYNC_INTERVAL = 12000;
 const DESKTOP_EMULATOR_VERSION = "stable";
 const DESKTOP_PATH_TO_DATA = `https://cdn.emulatorjs.org/${DESKTOP_EMULATOR_VERSION}/data/`;
 const DESKTOP_CORE_CONFIG = {
@@ -73,6 +75,8 @@ const defaultPrefs = {
   cloudUrl: "",
   cloudAnonKey: "",
   cloudEmail: "",
+  libraryEntries: [],
+  libraryView: "shelf",
 };
 
 const elements = {};
@@ -94,14 +98,26 @@ const desktopRuntime = {
   biosObjectUrl: "",
   assetObjectUrls: [],
   pendingLaunch: null,
+  bridgeReady: false,
+  savePath: "",
 };
 const cloudState = {
   client: null,
   session: null,
   user: null,
   status: "offline",
-  message: "Conecta tu proyecto Supabase para sincronizar saves de GB/GBC y GBA.",
+  message: "Conecta tu proyecto Supabase para sincronizar saves locales y de core web.",
   syncInFlight: false,
+  saveState: "local",
+  saveMessage: "Sincronizacion local solamente.",
+  lastLocalHash: "",
+  lastSyncedHash: "",
+  lastSyncedAt: "",
+};
+const desktopBridge = {
+  requestId: 0,
+  pending: new Map(),
+  autoSyncLock: false,
 };
 
 const gbcSpeakerDots = `
@@ -658,6 +674,8 @@ function refreshElements() {
   elements.cloudDownloadBtn = document.querySelector("#cloud-download-btn");
   elements.cloudBadge = document.querySelector("#cloud-badge");
   elements.cloudStatusCopy = document.querySelector("#cloud-status-copy");
+  elements.saveSyncChip = document.querySelector("#save-sync-chip");
+  elements.saveSyncChipTop = document.querySelector("#save-sync-chip-top");
   elements.ps1BiosInput = document.querySelector("#ps1-bios-input");
   elements.ps1BiosBadge = document.querySelector("#ps1-bios-badge");
   elements.statusLine = document.querySelector("#status-line");
@@ -666,6 +684,13 @@ function refreshElements() {
   elements.onboardingRomCopy = document.querySelector("#onboarding-rom-copy");
   elements.onboardingSystemCopy = document.querySelector("#onboarding-system-copy");
   elements.onboardingBiosCopy = document.querySelector("#onboarding-bios-copy");
+  elements.libraryHero = document.querySelector("#library-hero");
+  elements.libraryHeroTitle = document.querySelector("#library-hero-title");
+  elements.libraryHeroCopy = document.querySelector("#library-hero-copy");
+  elements.libraryHeroSystem = document.querySelector("#library-hero-system");
+  elements.libraryHeroTime = document.querySelector("#library-hero-time");
+  elements.libraryGrid = document.querySelector("#library-grid");
+  elements.libraryViewButtons = [...document.querySelectorAll("[data-library-view]")];
   elements.stateOutput = document.querySelector("#state-output");
   elements.menuOverlay = document.querySelector("#menu-overlay");
   elements.toggleMenuBtn = document.querySelector("#toggle-menu-btn");
@@ -960,12 +985,19 @@ function revokeDesktopAssetUrls() {
 }
 
 function teardownDesktopRuntime({ preserveBios = true, preserveAssets = false } = {}) {
+  desktopBridge.pending.forEach(({ reject, timeoutId }) => {
+    window.clearTimeout(timeoutId);
+    reject(new Error("El core web se cerro antes de completar el save."));
+  });
+  desktopBridge.pending.clear();
   if (desktopRuntime.iframe && desktopRuntime.iframe.parentNode) {
     desktopRuntime.iframe.remove();
   }
   desktopRuntime.iframe = null;
   desktopRuntime.active = false;
   desktopRuntime.currentSystem = "";
+  desktopRuntime.bridgeReady = false;
+  desktopRuntime.savePath = "";
   desktopRuntime.romFile = null;
   revokeObjectUrl("romObjectUrl");
   revokeObjectUrl("biosObjectUrl");
@@ -1011,6 +1043,34 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
     <script>
       window.__codexTrackedGains = new Set();
       window.__codexVolume = 1;
+      window.__codexCaptureCtor = function (name, storeKey) {
+        let currentValue = window[name];
+        Object.defineProperty(window, name, {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return currentValue;
+          },
+          set(nextValue) {
+            if (typeof nextValue !== "function") {
+              currentValue = nextValue;
+              return;
+            }
+            currentValue = new Proxy(nextValue, {
+              construct(target, args, newTarget) {
+                const instance = Reflect.construct(target, args, newTarget);
+                window[storeKey] = instance;
+                return instance;
+              },
+              apply(target, thisArg, args) {
+                return Reflect.apply(target, thisArg, args);
+              },
+            });
+          },
+        });
+      };
+      window.__codexCaptureCtor("EmulatorJS", "__codexEmulatorInstance");
+      window.__codexCaptureCtor("EJS_GameManager", "__codexGameManagerInstance");
       window.__codexTrackGainNode = function (node) {
         if (!node || !node.gain) return node;
         window.__codexTrackedGains.add(node);
@@ -1070,6 +1130,69 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
           } catch (error) {}
         });
       };
+      window.__codexBytesToBase64 = function (bytes) {
+        let binary = "";
+        const chunk = 32768;
+        for (let offset = 0; offset < bytes.length; offset += chunk) {
+          const slice = bytes.subarray(offset, offset + chunk);
+          binary += String.fromCharCode(...slice);
+        }
+        return btoa(binary);
+      };
+      window.__codexBase64ToBytes = function (value) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      };
+      window.__codexEnsureDir = function (path) {
+        const parts = String(path || "").split("/");
+        let current = "";
+        for (let index = 0; index < parts.length - 1; index += 1) {
+          const part = parts[index];
+          if (!part) continue;
+          current += "/" + part;
+          if (!window.__codexGameManagerInstance.FS.analyzePath(current).exists) {
+            window.__codexGameManagerInstance.FS.mkdir(current);
+          }
+        }
+      };
+      window.__codexExportSavePayload = async function () {
+        const manager = window.__codexEmulatorInstance?.gameManager || window.__codexGameManagerInstance;
+        if (!manager) {
+          throw new Error("EmulatorJS aun no expone el gestor de saves.");
+        }
+        if (typeof manager.saveSaveFiles === "function") {
+          manager.saveSaveFiles();
+        }
+        if (typeof manager.getSaveFile !== "function" || typeof manager.getSaveFilePath !== "function") {
+          throw new Error("Este core no expone export de savefile.");
+        }
+        const raw = await manager.getSaveFile();
+        const bytes = raw instanceof Uint8Array ? raw : new Uint8Array(raw || []);
+        return {
+          path: manager.getSaveFilePath(),
+          payload: window.__codexBytesToBase64(bytes),
+        };
+      };
+      window.__codexImportSavePayload = async function (value) {
+        const manager = window.__codexEmulatorInstance?.gameManager || window.__codexGameManagerInstance;
+        if (!manager) {
+          throw new Error("EmulatorJS aun no esta listo para importar save.");
+        }
+        const targetPath = value?.path || manager.getSaveFilePath();
+        const bytes = window.__codexBase64ToBytes(value.payload);
+        window.__codexEnsureDir(targetPath);
+        if (manager.FS.analyzePath(targetPath).exists) {
+          manager.FS.unlink(targetPath);
+        }
+        manager.FS.writeFile(targetPath, bytes);
+        if (typeof manager.loadSaveFiles === "function") {
+          manager.loadSaveFiles();
+        }
+      };
       window.addEventListener("message", (event) => {
         if (event.data?.type !== "desktop-command") return;
         if (event.data.command === "set-volume") {
@@ -1078,6 +1201,26 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
         }
         if (event.data.command === "dispatch-key" && event.data.value) {
           window.__codexDispatchKey(event.data.value.key, event.data.value.eventType);
+          return;
+        }
+        if (event.data.command === "export-save-payload") {
+          window.__codexExportSavePayload()
+            .then((result) => {
+              parent.postMessage({ type: "desktop-command-result", requestId: event.data.requestId, system: ${escapedSystem}, result }, "*");
+            })
+            .catch((error) => {
+              parent.postMessage({ type: "desktop-command-error", requestId: event.data.requestId, system: ${escapedSystem}, message: error.message }, "*");
+            });
+          return;
+        }
+        if (event.data.command === "import-save-payload" && event.data.value) {
+          window.__codexImportSavePayload(event.data.value)
+            .then(() => {
+              parent.postMessage({ type: "desktop-command-result", requestId: event.data.requestId, system: ${escapedSystem}, result: { ok: true } }, "*");
+            })
+            .catch((error) => {
+              parent.postMessage({ type: "desktop-command-error", requestId: event.data.requestId, system: ${escapedSystem}, message: error.message }, "*");
+            });
         }
       });
       window.EJS_player = "#game";
@@ -1091,6 +1234,11 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
       window.EJS_language = "es-ES";
       window.EJS_startOnLoaded = true;
       window.EJS_color = "#10151b";
+      window.EJS_ready = function () {
+        const manager = window.__codexEmulatorInstance?.gameManager || window.__codexGameManagerInstance;
+        const savePath = manager?.getSaveFilePath ? manager.getSaveFilePath() : "";
+        parent.postMessage({ type: "desktop-save-ready", system: ${escapedSystem}, savePath }, "*");
+      };
       ${emulatorJsNeedsThreads(system) ? "window.EJS_threads = true;" : ""}
       ${biosUrl ? `window.EJS_biosUrl = ${JSON.stringify(biosUrl)};` : ""}
       window.addEventListener("load", () => {
@@ -1117,6 +1265,8 @@ async function startDesktopRuntime({ system, file, assetUrls = [] }) {
   desktopRuntime.pendingLaunch = { system, file, assetUrls };
   desktopRuntime.romFile = file;
   desktopRuntime.currentSystem = system;
+  desktopRuntime.bridgeReady = false;
+  desktopRuntime.savePath = "";
   desktopRuntime.assetObjectUrls = [...assetUrls];
   desktopRuntime.romObjectUrl = URL.createObjectURL(file);
   if (desktopNeedsBios(system)) {
@@ -1244,6 +1394,8 @@ function persistPrefs() {
     cloudUrl: uiState.cloudUrl,
     cloudAnonKey: uiState.cloudAnonKey,
     cloudEmail: uiState.cloudEmail,
+    libraryEntries: uiState.libraryEntries,
+    libraryView: uiState.libraryView,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -1815,6 +1967,187 @@ function refreshOnboarding() {
   }
 }
 
+function systemDisplayName(system) {
+  return (
+    {
+      gbc: "GB/GBC",
+      gba: "GBA",
+      ds: "DS",
+      snes: "SNES",
+      n64: "N64",
+      ps1: "PS1",
+      psp: "PSP",
+    }[system] || system.toUpperCase()
+  );
+}
+
+function formatRelativeStamp(value) {
+  if (!value) return "Sin historial";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin historial";
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+  if (diffMinutes < 1) return "Ahora mismo";
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `Hace ${diffHours} h`;
+  const diffDays = Math.round(diffHours / 24);
+  return `Hace ${diffDays} d`;
+}
+
+function triggerUiPulse(target) {
+  const node = typeof target === "string" ? document.querySelector(target) : target;
+  if (!node) return;
+  node.classList.remove("is-pulsing");
+  void node.offsetWidth;
+  node.classList.add("is-pulsing");
+  window.clearTimeout(node.__pulseTimer);
+  node.__pulseTimer = window.setTimeout(() => node.classList.remove("is-pulsing"), 520);
+}
+
+function markSaveSyncState(state, message) {
+  cloudState.saveState = state;
+  cloudState.saveMessage = message;
+  syncCloudUi();
+}
+
+function currentLibraryId(system, file) {
+  return `${system}:${sanitizeCloudKey(file?.name || "rom")}:${file?.size || 0}`;
+}
+
+function recordLibraryEntry(file, system) {
+  if (!(file instanceof File)) return;
+  const entry = {
+    id: currentLibraryId(system, file),
+    system,
+    name: file.name,
+    size: file.size,
+    extension: getFileExtension(file.name),
+    lastPlayedAt: new Date().toISOString(),
+    biosRequired: desktopNeedsBios(system),
+  };
+  uiState.libraryEntries = [entry, ...(uiState.libraryEntries || []).filter((item) => item.id !== entry.id)].slice(0, LIBRARY_MAX_ITEMS);
+}
+
+function posterAccentForSystem(system) {
+  return (
+    {
+      gbc: ["emerald", "amber"],
+      gba: ["indigo", "violet"],
+      ds: ["slate", "ice"],
+      snes: ["lavender", "plum"],
+      n64: ["forest", "gold"],
+      ps1: ["coral", "cobalt"],
+      psp: ["steel", "sky"],
+    }[system] || ["graphite", "mist"]
+  );
+}
+
+function posterMonogram(title) {
+  const clean = String(title || "ROM").replace(/\.[^.]+$/, "").trim();
+  const parts = clean.split(/[\s_-]+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+function buildLibraryPoster(entry, title) {
+  const [toneA, toneB] = posterAccentForSystem(entry.system);
+  const label = systemDisplayName(entry.system);
+  const monogram = posterMonogram(title);
+  return `
+    <div class="library-poster" data-poster-system="${entry.system}" data-tone-a="${toneA}" data-tone-b="${toneB}" aria-hidden="true">
+      <div class="library-poster-gloss"></div>
+      <div class="library-poster-inner">
+        <span class="library-poster-system">${label}</span>
+        <strong class="library-poster-mark">${monogram}</strong>
+        <span class="library-poster-title">${title}</span>
+      </div>
+      <div class="library-spine">${label}</div>
+    </div>
+  `;
+}
+
+function shelfVarianceForIndex(index) {
+  const variants = [
+    { tilt: "-1.4deg", lift: "-3px", posterTilt: "1.8deg" },
+    { tilt: "0.8deg", lift: "1px", posterTilt: "-1.2deg" },
+    { tilt: "-0.6deg", lift: "-1px", posterTilt: "0.9deg" },
+    { tilt: "1.5deg", lift: "2px", posterTilt: "-1.8deg" },
+    { tilt: "-0.9deg", lift: "0px", posterTilt: "1.1deg" },
+  ];
+  return variants[index % variants.length];
+}
+
+function renderLibrary() {
+  if (!elements.libraryGrid) return;
+  const libraryView = uiState.libraryView || "shelf";
+  elements.libraryGrid.dataset.libraryView = libraryView;
+  elements.libraryViewButtons?.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.libraryView === libraryView);
+    button.setAttribute("aria-pressed", String(button.dataset.libraryView === libraryView));
+  });
+  const currentEntry = uiState.loadedRom
+    ? {
+        id: currentLibraryId(uiState.currentSystem, uiState.loadedRom),
+        system: uiState.currentSystem,
+        name: uiState.loadedRom.name,
+        size: uiState.loadedRom.size,
+        extension: getFileExtension(uiState.loadedRom.name),
+        lastPlayedAt: new Date().toISOString(),
+        biosRequired: desktopNeedsBios(uiState.currentSystem),
+      }
+    : null;
+  const featured = currentEntry || uiState.libraryEntries?.[0] || null;
+  if (elements.libraryHero) {
+    elements.libraryHero.classList.toggle("is-loaded", Boolean(featured));
+  }
+  if (elements.libraryHeroSystem) {
+    elements.libraryHeroSystem.textContent = featured ? systemDisplayName(featured.system) : "Sin sistema";
+  }
+  if (elements.libraryHeroTime) {
+    elements.libraryHeroTime.textContent = featured ? formatRelativeStamp(featured.lastPlayedAt) : "Sin historial";
+  }
+
+  if (!(uiState.libraryEntries || []).length) {
+    elements.libraryGrid.innerHTML = `
+      <article class="library-empty">
+        <strong>Sin cartuchos todavia</strong>
+        <span>La biblioteca aparecera aqui con tus ultimas ROMs, sistema preferido y estado de sync.</span>
+      </article>
+    `;
+    return;
+  }
+
+  elements.libraryGrid.innerHTML = uiState.libraryEntries
+    .map((entry, index) => {
+      const isActive = currentEntry && entry.id === currentEntry.id;
+      const title = entry.name.replace(/\.[^.]+$/, "");
+      const detailText = `${Math.max(1, Math.round(entry.size / 1024))} KB • .${entry.extension || "rom"} • ${entry.biosRequired ? "Requiere BIOS" : "Arranque directo"}`;
+      const poster = buildLibraryPoster(entry, title);
+      const variance = shelfVarianceForIndex(index);
+      return `
+        <article class="library-card ${isActive ? "is-active" : ""}" data-library-id="${entry.id}" data-library-system="${entry.system}" style="--shelf-card-tilt:${variance.tilt}; --shelf-card-lift:${variance.lift}; --shelf-poster-tilt:${variance.posterTilt};">
+          ${poster}
+          <div class="library-card-top">
+            <span class="library-system-badge">${systemDisplayName(entry.system)}</span>
+            <span class="library-size-badge">${Math.max(1, Math.round(entry.size / 1024))} KB</span>
+          </div>
+          <strong>${title}</strong>
+          <p>${detailText}</p>
+          <div class="library-card-footer">
+            <span>${formatRelativeStamp(entry.lastPlayedAt)}</span>
+            <button type="button" class="library-card-action" data-library-activate="${entry.system}">
+              ${isActive ? "Activo" : `Usar ${systemDisplayName(entry.system)}`}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function cloudSaveSupported(system = uiState.currentSystem) {
   return CLOUD_SUPPORTED_SYSTEMS.has(system);
 }
@@ -1833,13 +2166,87 @@ function currentCloudConfig() {
   };
 }
 
+function hashString(value) {
+  let hash = 2166136261;
+  const text = String(value || "");
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function nextDesktopBridgeRequestId() {
+  desktopBridge.requestId += 1;
+  return `desktop-bridge-${desktopBridge.requestId}`;
+}
+
+function sendDesktopBridgeCommand(command, value) {
+  const frameWindow = desktopRuntime.iframe?.contentWindow;
+  if (!frameWindow || !desktopRuntime.active) {
+    return Promise.reject(new Error("El core web no esta listo para guardar."));
+  }
+  const requestId = nextDesktopBridgeRequestId();
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      desktopBridge.pending.delete(requestId);
+      reject(new Error("El core web no respondio al comando de save."));
+    }, 12000);
+    desktopBridge.pending.set(requestId, { resolve, reject, timeoutId });
+    frameWindow.postMessage({ type: "desktop-command", command, requestId, value }, "*");
+  });
+}
+
+async function exportDesktopSavePayload() {
+  const result = await sendDesktopBridgeCommand("export-save-payload");
+  const payload = {
+    type: `${uiState.currentSystem}-savefile`,
+    system: uiState.currentSystem,
+    rom: uiState.loadedRom,
+    path: result.path || "",
+    payload: result.payload,
+  };
+  const fingerprint = hashString(`${payload.system}:${payload.path}:${payload.payload}`);
+  return { payload, fingerprint };
+}
+
+async function importDesktopSavePayload(data) {
+  if (!data?.payload) {
+    throw new Error("El save de nube no trae payload para restaurar.");
+  }
+  await sendDesktopBridgeCommand("import-save-payload", {
+    payload: data.payload,
+    path: data.path || "",
+  });
+}
+
+async function maybeAutoSyncDesktopCloudSave() {
+  if (desktopBridge.autoSyncLock) return;
+  if (!EMULATORJS_SYSTEMS.has(uiState.currentSystem) || !desktopRuntime.active || !desktopRuntime.bridgeReady) return;
+  if (!cloudState.client || !cloudState.user || !cloudSaveSupported()) return;
+  desktopBridge.autoSyncLock = true;
+  try {
+    const { payload, fingerprint } = await exportDesktopSavePayload();
+    cloudState.lastLocalHash = fingerprint;
+    if (!payload.payload || cloudState.lastSyncedHash === fingerprint) {
+      if (cloudState.lastSyncedHash === fingerprint) {
+        markSaveSyncState("synced", cloudState.lastSyncedAt ? `Sincronizado ${formatRelativeStamp(cloudState.lastSyncedAt)}` : "Sincronizado");
+      }
+      return;
+    }
+    markSaveSyncState("pending", `Save ${systemDisplayName(uiState.currentSystem)} pendiente de sincronizar`);
+    await syncCurrentSaveToCloud(payload, fingerprint);
+  } catch (error) {
+    if (!/no respondio|todavia|aun no|not ready/i.test(error.message)) {
+      markSaveSyncState("error", error.message);
+    }
+  } finally {
+    desktopBridge.autoSyncLock = false;
+  }
+}
+
 function syncCloudUi() {
   const supported = cloudSaveSupported();
-  const unsupportedMessage = EMULATORJS_SYSTEMS.has(uiState.currentSystem)
-    ? "N64, PS1 y PSP siguen pendientes porque EmulatorJS no expone aun una API limpia de save export/import para tu app."
-    : uiState.currentSystem === "ds"
-      ? "DS ya puede sincronizar savefiles del cartucho via WebMelon."
-      : "GB/GBC y GBA ya pueden sincronizar saves en esta version.";
   if (elements.cloudBadge) {
     elements.cloudBadge.textContent = cloudState.user
       ? "conectado"
@@ -1849,8 +2256,15 @@ function syncCloudUi() {
   }
   if (elements.cloudStatusCopy) {
     const suffix = cloudState.user?.email ? ` Sesion: ${cloudState.user.email}.` : "";
-    elements.cloudStatusCopy.textContent = `${cloudState.message} ${unsupportedMessage}${suffix}`.trim();
+    const syncSuffix = cloudState.saveMessage ? ` Estado save: ${cloudState.saveMessage}` : "";
+    elements.cloudStatusCopy.textContent = `${cloudState.message}${syncSuffix}${suffix}`.trim();
   }
+  [elements.saveSyncChip, elements.saveSyncChipTop].forEach((chip) => {
+    if (!chip) return;
+    chip.textContent = cloudState.saveMessage || "Solo local";
+    chip.dataset.syncState = cloudState.saveState || "local";
+    chip.classList.toggle("is-live", cloudState.saveState === "synced");
+  });
   const ready = Boolean(cloudState.client && cloudState.user && supported && !cloudState.syncInFlight);
   if (elements.cloudConnectBtn) elements.cloudConnectBtn.disabled = !window.supabase || cloudState.syncInFlight;
   if (elements.cloudSignInBtn) elements.cloudSignInBtn.disabled = !cloudState.client || cloudState.syncInFlight;
@@ -1871,6 +2285,7 @@ function bindCloudAuthListener(client) {
         ? "Supabase conectado y listo para sincronizar."
         : "Proyecto conectado. Envia el magic link para iniciar sesion.",
     );
+    markSaveSyncState(session?.user ? "pending" : "local", session?.user ? "Esperando cambios de save para sincronizar" : "Solo local");
   });
 }
 
@@ -1901,6 +2316,7 @@ async function connectSupabaseClient() {
       ? "Supabase conectado y listo para sincronizar."
       : "Proyecto conectado. Envia el magic link para iniciar sesion.",
   );
+  markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Esperando cambios de save para sincronizar" : "Solo local");
 }
 
 function sanitizeCloudKey(value) {
@@ -1913,6 +2329,9 @@ function sanitizeCloudKey(value) {
 }
 
 function currentCloudGameId() {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem) && desktopRuntime.savePath) {
+    return sanitizeCloudKey(desktopRuntime.savePath.replace(/^\/+/, "").replace(/\.[^.]+$/i, ""));
+  }
   if (uiState.currentSystem === "ds" && dsSavePath) {
     return sanitizeCloudKey(dsSavePath.replace(/^\/savefiles\//, "").replace(/\.sav$/i, ""));
   }
@@ -1960,13 +2379,13 @@ function currentDsSavePayload() {
   };
 }
 
-function currentSavePayload() {
+async function currentSavePayload() {
   if (!isReady()) {
     throw new Error("No hay emulacion activa para exportar.");
   }
 
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    throw new Error("SNES, N64, PS1 y PSP usan el menu interno del core web para saves.");
+    return (await exportDesktopSavePayload()).payload;
   }
 
   if (uiState.currentSystem === "ds") {
@@ -2007,23 +2426,29 @@ function downloadJsonFile(filename, payload) {
   URL.revokeObjectURL(url);
 }
 
-function exportCurrentSave() {
+async function exportCurrentSave() {
   try {
-    const payload = currentSavePayload();
+    const payload = await currentSavePayload();
     const romName = uiState.loadedRom ? uiState.loadedRom.name.replace(/\.[^.]+$/, "") : "save";
     downloadJsonFile(`${romName}-${uiState.currentSystem}-save.json`, payload);
     updateStatus("Save exportado.");
+    markSaveSyncState("local", `Exportado localmente para ${systemDisplayName(uiState.currentSystem)}`);
+    triggerUiPulse(elements.saveSyncChipTop);
   } catch (error) {
     updateStatus(error.message);
   }
 }
 
 async function applyImportedSaveData(data) {
-  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    throw new Error("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
-  }
   if (data.system !== uiState.currentSystem) {
     throw new Error("El save importado no coincide con el sistema activo.");
+  }
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    await importDesktopSavePayload(data);
+    updateStatus(`Save ${systemDisplayName(uiState.currentSystem)} importado correctamente.`);
+    renderStatePanel();
+    markSaveSyncState("local", `Save ${systemDisplayName(uiState.currentSystem)} restaurado en el core`);
+    return;
   }
   if (uiState.currentSystem === "ds") {
     if (!isDsReady()) throw new Error("Carga primero una ROM DS.");
@@ -2065,16 +2490,18 @@ async function importCurrentSave(file) {
   }
 }
 
-async function syncCurrentSaveToCloud() {
+async function syncCurrentSaveToCloud(providedPayload = null, providedFingerprint = "") {
   if (!cloudSaveSupported()) {
-    throw new Error("La nube MVP solo esta activa para GB/GBC y GBA por ahora.");
+    throw new Error("Este sistema aun no esta listo para sync de nube.");
   }
   if (!cloudState.client || !cloudState.user) {
     throw new Error("Conecta Supabase e inicia sesion antes de subir saves.");
   }
-  const payload = currentSavePayload();
+  const payload = providedPayload || await currentSavePayload();
+  const fingerprint = providedFingerprint || hashString(`${payload.system}:${payload.path || ""}:${payload.payload || ""}`);
   const record = buildCloudRecord(payload);
   cloudState.syncInFlight = true;
+  markSaveSyncState("pending", `Sincronizando ${systemDisplayName(record.system)}...`);
   syncCloudUi();
   const { error } = await cloudState.client
     .from("cloud_saves")
@@ -2082,12 +2509,16 @@ async function syncCurrentSaveToCloud() {
   cloudState.syncInFlight = false;
   syncCloudUi();
   if (error) throw error;
+  cloudState.lastLocalHash = fingerprint;
+  cloudState.lastSyncedHash = fingerprint;
+  cloudState.lastSyncedAt = new Date().toISOString();
+  markSaveSyncState("synced", `Sincronizado ${formatRelativeStamp(cloudState.lastSyncedAt)}`);
   setCloudStatus("conectado", `Save ${record.system.toUpperCase()} sincronizado en la nube.`);
 }
 
 async function restoreSaveFromCloud() {
   if (!cloudSaveSupported()) {
-    throw new Error("La nube MVP solo esta activa para GB/GBC y GBA por ahora.");
+    throw new Error("Este sistema aun no esta listo para sync de nube.");
   }
   if (!cloudState.client || !cloudState.user) {
     throw new Error("Conecta Supabase e inicia sesion antes de restaurar saves.");
@@ -2110,6 +2541,10 @@ async function restoreSaveFromCloud() {
     throw new Error("No hay un save en nube para este juego y sistema.");
   }
   await applyImportedSaveData(data.payload_json);
+  cloudState.lastLocalHash = hashString(`${data.payload_json.system}:${data.payload_json.path || ""}:${data.payload_json.payload || ""}`);
+  cloudState.lastSyncedHash = cloudState.lastLocalHash;
+  cloudState.lastSyncedAt = new Date().toISOString();
+  markSaveSyncState("synced", `Restaurado desde nube ${formatRelativeStamp(cloudState.lastSyncedAt)}`);
   setCloudStatus("conectado", `Save ${uiState.currentSystem.toUpperCase()} restaurado desde la nube.`);
 }
 
@@ -2234,6 +2669,7 @@ function applyVisualPrefs() {
     elements.ps1BiosBadge.textContent = desktopRuntime.biosFile ? "cargada" : "pendiente";
   }
   syncCloudUi();
+  renderLibrary();
 }
 
 function keyLabelForKey(key) {
@@ -2486,10 +2922,10 @@ function refreshMeta() {
     ? "Flechas, Z, X, Enter, Backspace y hombros L/R con A y S."
     : "Flechas, Z, X, Enter y Backspace para la cruceta y botones clasicos.";
   elements.saveProfile.textContent = isEmulatorJs
-    ? "Sin guardado"
+    ? "Savefile + nube"
     : isDs ? "Guardado DS" : isGba ? "Guardado SRAM" : "Guardado por estado";
   elements.saveHint.textContent = isEmulatorJs
-    ? "El core usa sus propias herramientas internas. Los botones de save de esta app siguen reservados para GB, GBA y DS."
+    ? "El core web ahora puede exportar e importar su savefile para sincronizarlo con Supabase."
     : isDs
     ? "Los saves DS usan archivos del cartucho y almacenamiento del navegador."
     : isGba
@@ -2499,10 +2935,10 @@ function refreshMeta() {
   elements.drawerOverlayBtn.disabled = isEmulatorJs;
   elements.quickSaveBtn.disabled = isEmulatorJs;
   elements.quickLoadBtn.disabled = isEmulatorJs;
-  elements.importSaveBtn.disabled = isEmulatorJs;
-  elements.exportSaveBtn.disabled = isEmulatorJs;
-  elements.drawerImportSaveBtn.disabled = isEmulatorJs;
-  elements.drawerExportSaveBtn.disabled = isEmulatorJs;
+  elements.importSaveBtn.disabled = false;
+  elements.exportSaveBtn.disabled = false;
+  elements.drawerImportSaveBtn.disabled = false;
+  elements.drawerExportSaveBtn.disabled = false;
   elements.touchControlsToggle.disabled = isEmulatorJs;
   elements.speedBtn.disabled = isEmulatorJs;
   if (elements.consolePowerBtn) {
@@ -2566,6 +3002,7 @@ function persistAndRender() {
   }
   applyVisualPrefs();
   renderStatePanel();
+  renderLibrary();
   updateStatus();
 }
 
@@ -2951,6 +3388,7 @@ async function loadDsRom(file) {
   dsSavePath = `/savefiles/${ds.cart.getUnloadedCartCode()}.sav`;
   if (typeof ds.storage.onSaveComplete === "function") {
     ds.storage.onSaveComplete(() => {
+      markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save DS pendiente de sincronizar" : "Save DS guardado localmente");
       if (cloudState.client && cloudState.user && cloudSaveSupported("ds")) {
         syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar DS: ${error.message}`));
       }
@@ -3000,6 +3438,9 @@ async function loadDesktopRom(file, system, meta = {}) {
 async function loadRom(fileList) {
   teardownCurrentEmulator();
   uiState.awaitingStart = false;
+  cloudState.lastLocalHash = "";
+  cloudState.lastSyncedHash = "";
+  cloudState.lastSyncedAt = "";
   const files = Array.isArray(fileList) ? fileList : [fileList].filter(Boolean);
   const primaryFile = getPrimaryFile(files);
   const target = resolveTargetSystem(files);
@@ -3025,6 +3466,15 @@ async function loadRom(fileList) {
   } else {
     await loadGbcRom(primaryFile);
   }
+  recordLibraryEntry(primaryFile, target.system);
+  persistPrefs();
+  renderLibrary();
+  markSaveSyncState(
+    cloudState.user ? "pending" : "local",
+    cloudState.user ? `Sesion ${systemDisplayName(target.system)} lista para sincronizar` : `Sesion ${systemDisplayName(target.system)} solo local`,
+  );
+  triggerUiPulse(elements.libraryHero);
+  triggerUiPulse(elements.systemChip);
 }
 
 function saveToSlot(slot) {
@@ -3050,6 +3500,7 @@ function saveToSlot(slot) {
       return;
     }
     window.localStorage.setItem(gbaSaveSlotName(slot), savedata);
+    markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save GBA pendiente de sincronizar" : "Save GBA guardado localmente");
     if (cloudState.client && cloudState.user && cloudSaveSupported()) {
       syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
     }
@@ -3063,6 +3514,7 @@ function saveToSlot(slot) {
   }
 
   window.saveState(gbcSaveSlotName(slot));
+  markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save GB/GBC pendiente de sincronizar" : "Save GB/GBC guardado localmente");
   if (cloudState.client && cloudState.user && cloudSaveSupported()) {
     syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
   }
@@ -3345,6 +3797,7 @@ syncCanvasResolution(uiState.currentSystem);
 syncFormState();
 applyVisualPrefs();
 renderStatePanel();
+renderLibrary();
 updateStatus();
 bindDynamicElements();
 syncCloudUi();
@@ -3488,6 +3941,17 @@ document.addEventListener("click", (event) => {
   if (removeCheat) {
     uiState.cheats = uiState.cheats.filter((cheat) => cheat.id !== removeCheat.dataset.cheatRemove);
     persistAndRender();
+    return;
+  }
+
+  const libraryActivate = event.target.closest("[data-library-activate]");
+  if (libraryActivate) {
+    const targetSystem = libraryActivate.dataset.libraryActivate;
+    uiState.systemPreference = targetSystem;
+    setCurrentSystem(targetSystem);
+    persistAndRender();
+    updateStatus(`Biblioteca preparada para ${systemDisplayName(targetSystem)}. Solo vuelve a subir esa ROM para retomarla.`);
+    triggerUiPulse(elements.libraryHero);
   }
 });
 
@@ -3602,6 +4066,15 @@ elements.touchControlsToggle.addEventListener("change", (event) => {
 elements.themeSelect.addEventListener("change", (event) => {
   uiState.theme = event.target.value;
   persistAndRender();
+});
+
+elements.libraryViewButtons?.forEach((button) => {
+  button.addEventListener("click", () => {
+    uiState.libraryView = button.dataset.libraryView || "shelf";
+    persistAndRender();
+    updateStatus(`Vista de biblioteca: ${uiState.libraryView}.`);
+    triggerUiPulse(elements.libraryGrid);
+  });
 });
 
 elements.attackInputs.forEach((input) => {
@@ -3774,15 +4247,43 @@ elements.resetKeymapBtn.addEventListener("click", () => {
 
 elements.cheatForm.addEventListener("submit", addCheat);
 window.addEventListener("message", (event) => {
-  if (event.data?.type !== "desktop-frame-ready") return;
-  if (!desktopRuntime.iframe || event.data.system !== uiState.currentSystem) return;
-  sendDesktopCommand("set-volume", uiState.volume / 100);
-  desktopRuntime.iframe.focus();
+  if (!event.data?.type) return;
+  if (event.data.type === "desktop-frame-ready") {
+    if (!desktopRuntime.iframe || event.data.system !== uiState.currentSystem) return;
+    sendDesktopCommand("set-volume", uiState.volume / 100);
+    desktopRuntime.iframe.focus();
+    return;
+  }
+  if (event.data.type === "desktop-save-ready") {
+    if (event.data.system !== uiState.currentSystem) return;
+    desktopRuntime.bridgeReady = true;
+    desktopRuntime.savePath = event.data.savePath || "";
+    markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? `Bridge ${systemDisplayName(uiState.currentSystem)} lista para nube` : `Bridge ${systemDisplayName(uiState.currentSystem)} lista local`);
+    return;
+  }
+  if (event.data.type === "desktop-command-result") {
+    const pending = desktopBridge.pending.get(event.data.requestId);
+    if (!pending) return;
+    window.clearTimeout(pending.timeoutId);
+    desktopBridge.pending.delete(event.data.requestId);
+    pending.resolve(event.data.result);
+    return;
+  }
+  if (event.data.type === "desktop-command-error") {
+    const pending = desktopBridge.pending.get(event.data.requestId);
+    if (!pending) return;
+    window.clearTimeout(pending.timeoutId);
+    desktopBridge.pending.delete(event.data.requestId);
+    pending.reject(new Error(event.data.message || "Error del core web."));
+  }
 });
 window.setInterval(() => {
   applyCheats();
   renderStatePanel();
 }, 180);
+window.setInterval(() => {
+  maybeAutoSyncDesktopCloudSave();
+}, DESKTOP_CLOUD_SYNC_INTERVAL);
 
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement && fullscreenState.active) {

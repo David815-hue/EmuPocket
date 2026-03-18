@@ -40,6 +40,23 @@
               <span id="onboarding-bios-copy">Solo `PS1` pide BIOS local de sesion antes de jugar.</span>
             </div>
           </section>
+          <section class="library-showcase" id="library-showcase" aria-label="Biblioteca local">
+            <div class="library-toolbar" aria-label="Vista de biblioteca">
+              <div class="library-view-toggle" role="group" aria-label="Cambiar vista">
+                <button type="button" class="library-view-btn" data-library-view="shelf">Shelf</button>
+                <button type="button" class="library-view-btn" data-library-view="grid">Grid</button>
+                <button type="button" class="library-view-btn" data-library-view="detail">Detail</button>
+              </div>
+            </div>
+            <article class="library-hero" id="library-hero">
+              <div class="library-hero-meta">
+                <span class="library-pill" id="library-hero-system">Sin sistema</span>
+                <span class="library-pill library-pill--sync" id="save-sync-chip">Solo local</span>
+                <span class="library-pill library-pill--subtle" id="library-hero-time">Sin historial</span>
+              </div>
+            </article>
+            <div class="library-grid" id="library-grid"></div>
+          </section>
         </div>
 
         <div class="topbar">
@@ -96,11 +113,12 @@
             </div>
 
             <div class="console-topline" style="justify-content: center;">
-              <div class="topline-pills">
-                <div class="status-chip" id="system-chip">Sistema: GBC</div>
-                <div id="brand-chip" style="display:none !important"></div>
-                <div id="save-mode-chip" style="display:none !important"></div>
-                <div id="overlay-summary" style="display:none !important"></div>
+            <div class="topline-pills">
+              <div class="status-chip" id="system-chip">Sistema: GBC</div>
+              <div class="status-chip status-chip--sync" id="save-sync-chip-top">Save local</div>
+              <div id="brand-chip" style="display:none !important"></div>
+              <div id="save-mode-chip" style="display:none !important"></div>
+              <div id="overlay-summary" style="display:none !important"></div>
               </div>
             </div>
 
@@ -284,7 +302,7 @@
               <h2>Nube Supabase</h2>
               <span class="mini-badge" id="cloud-badge">offline</span>
             </div>
-            <p id="cloud-status-copy">Conecta tu proyecto Supabase para sincronizar saves de GB/GBC y GBA.</p>
+            <p id="cloud-status-copy">Conecta tu proyecto Supabase para sincronizar saves locales y de core web.</p>
             <div class="form-grid compact">
               <label class="span-2">
                 Project URL
