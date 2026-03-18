@@ -4716,6 +4716,21 @@ body.drawer-open .dashboard {
   color: rgba(240, 241, 246, 0.82);
 }
 
+#cloud-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+#cloud-status-copy {
+  margin-bottom: 14px;
+}
+
+#cloud-connect-btn,
+#cloud-signin-btn,
+#cloud-upload-btn {
+  background: linear-gradient(180deg, rgba(71, 163, 122, 0.95), rgba(39, 119, 82, 0.96));
+}
+
 .panel-heading h2,
 .attack-editor h3 {
   margin: 0;

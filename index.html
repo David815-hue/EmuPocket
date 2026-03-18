@@ -281,6 +281,37 @@
 
           <section class="panel-block">
             <div class="panel-heading">
+              <h2>Nube Supabase</h2>
+              <span class="mini-badge" id="cloud-badge">offline</span>
+            </div>
+            <p id="cloud-status-copy">Conecta tu proyecto Supabase para sincronizar saves de GB/GBC y GBA.</p>
+            <div class="form-grid compact">
+              <label class="span-2">
+                Project URL
+                <input id="cloud-url-input" type="url" placeholder="https://tu-proyecto.supabase.co" />
+              </label>
+              <label class="span-2">
+                Anon key
+                <input id="cloud-anon-key-input" type="password" placeholder="eyJ..." />
+              </label>
+              <label class="span-2">
+                Email de acceso
+                <input id="cloud-email-input" type="email" placeholder="tu@email.com" />
+              </label>
+            </div>
+            <div class="panel-actions">
+              <button id="cloud-connect-btn" type="button">Conectar</button>
+              <button id="cloud-signin-btn" type="button">Magic link</button>
+              <button id="cloud-signout-btn" type="button">Salir</button>
+            </div>
+            <div class="panel-actions">
+              <button id="cloud-upload-btn" type="button">Subir save actual</button>
+              <button id="cloud-download-btn" type="button">Restaurar ultimo</button>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
               <h2>BIOS PS1</h2>
               <span class="mini-badge" id="ps1-bios-badge">pendiente</span>
             </div>
@@ -377,6 +408,8 @@
     <script src="./vendor/gba-js/js/gba.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/wasmemulator.js"></script>
     <script src="./vendor/ds-anywhere/webmelon-sdk/webmelon.js"></script>
+    <script src="/app-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./src/app.js?v=20260318-gba-screen-fit-fix"></script>
   </body>
 </html>

@@ -4,6 +4,7 @@ const GBA_SAVE_PREFIX = "GBA_SAVE_SLOT_";
 const GBA_BIOS_URL = "./vendor/gba-js/resources/bios.bin";
 const DESKTOP_SYSTEMS = new Set(["snes", "n64", "ps1"]);
 const EMULATORJS_SYSTEMS = new Set([...DESKTOP_SYSTEMS, "psp"]);
+const CLOUD_SUPPORTED_SYSTEMS = new Set(["gbc", "gba", "ds"]);
 const DESKTOP_EMULATOR_VERSION = "stable";
 const DESKTOP_PATH_TO_DATA = `https://cdn.emulatorjs.org/${DESKTOP_EMULATOR_VERSION}/data/`;
 const DESKTOP_CORE_CONFIG = {
@@ -69,6 +70,9 @@ const defaultPrefs = {
   speed: 1,
   cheats: [],
   keyBindings: defaultKeyBindings,
+  cloudUrl: "",
+  cloudAnonKey: "",
+  cloudEmail: "",
 };
 
 const elements = {};
@@ -90,6 +94,14 @@ const desktopRuntime = {
   biosObjectUrl: "",
   assetObjectUrls: [],
   pendingLaunch: null,
+};
+const cloudState = {
+  client: null,
+  session: null,
+  user: null,
+  status: "offline",
+  message: "Conecta tu proyecto Supabase para sincronizar saves de GB/GBC y GBA.",
+  syncInFlight: false,
 };
 
 const gbcSpeakerDots = `
@@ -636,6 +648,16 @@ function refreshElements() {
   elements.screenHint = document.querySelector("#screen-hint");
   elements.romInput = document.querySelector("#rom-input");
   elements.saveFileInput = document.querySelector("#save-file-input");
+  elements.cloudUrlInput = document.querySelector("#cloud-url-input");
+  elements.cloudAnonKeyInput = document.querySelector("#cloud-anon-key-input");
+  elements.cloudEmailInput = document.querySelector("#cloud-email-input");
+  elements.cloudConnectBtn = document.querySelector("#cloud-connect-btn");
+  elements.cloudSignInBtn = document.querySelector("#cloud-signin-btn");
+  elements.cloudSignOutBtn = document.querySelector("#cloud-signout-btn");
+  elements.cloudUploadBtn = document.querySelector("#cloud-upload-btn");
+  elements.cloudDownloadBtn = document.querySelector("#cloud-download-btn");
+  elements.cloudBadge = document.querySelector("#cloud-badge");
+  elements.cloudStatusCopy = document.querySelector("#cloud-status-copy");
   elements.ps1BiosInput = document.querySelector("#ps1-bios-input");
   elements.ps1BiosBadge = document.querySelector("#ps1-bios-badge");
   elements.statusLine = document.querySelector("#status-line");
@@ -833,6 +855,7 @@ const uiState = {
 let gbaCore = null;
 let gbaBiosBuffer = null;
 let dsReadyPromise = null;
+let dsSavePath = "";
 
 function desktopNeedsBios(system = uiState.currentSystem) {
   return DESKTOP_CORE_CONFIG[system]?.requiresBios === true;
@@ -1176,6 +1199,16 @@ function loadPrefs() {
   try {
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
     Object.assign(uiState, defaultPrefs, stored);
+    const configDefaults = window.__APP_CONFIG__ || {};
+    if (!uiState.cloudUrl && configDefaults.supabaseUrl) {
+      uiState.cloudUrl = configDefaults.supabaseUrl;
+    }
+    if (!uiState.cloudAnonKey && configDefaults.supabaseAnonKey) {
+      uiState.cloudAnonKey = configDefaults.supabaseAnonKey;
+    }
+    if (!uiState.cloudEmail && configDefaults.supabaseEmail) {
+      uiState.cloudEmail = configDefaults.supabaseEmail;
+    }
     if (!Array.isArray(uiState.attackLabels) || uiState.attackLabels.length !== 4) {
       uiState.attackLabels = [...defaultPrefs.attackLabels];
     }
@@ -1208,6 +1241,9 @@ function persistPrefs() {
     cheats: uiState.cheats,
     speed: uiState.speed,
     keyBindings: uiState.keyBindings,
+    cloudUrl: uiState.cloudUrl,
+    cloudAnonKey: uiState.cloudAnonKey,
+    cloudEmail: uiState.cloudEmail,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -1250,6 +1286,24 @@ function binaryStringFromArrayBuffer(buffer) {
     result += String.fromCharCode.apply(null, bytes.subarray(offset, offset + chunkSize));
   }
   return result;
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return window.btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 function getFileExtension(fileName) {
@@ -1761,6 +1815,151 @@ function refreshOnboarding() {
   }
 }
 
+function cloudSaveSupported(system = uiState.currentSystem) {
+  return CLOUD_SUPPORTED_SYSTEMS.has(system);
+}
+
+function setCloudStatus(status, message) {
+  cloudState.status = status;
+  cloudState.message = message;
+  syncCloudUi();
+}
+
+function currentCloudConfig() {
+  return {
+    url: (uiState.cloudUrl || "").trim(),
+    anonKey: (uiState.cloudAnonKey || "").trim(),
+    email: (uiState.cloudEmail || "").trim(),
+  };
+}
+
+function syncCloudUi() {
+  const supported = cloudSaveSupported();
+  const unsupportedMessage = EMULATORJS_SYSTEMS.has(uiState.currentSystem)
+    ? "N64, PS1 y PSP siguen pendientes porque EmulatorJS no expone aun una API limpia de save export/import para tu app."
+    : uiState.currentSystem === "ds"
+      ? "DS ya puede sincronizar savefiles del cartucho via WebMelon."
+      : "GB/GBC y GBA ya pueden sincronizar saves en esta version.";
+  if (elements.cloudBadge) {
+    elements.cloudBadge.textContent = cloudState.user
+      ? "conectado"
+      : cloudState.client
+        ? "listo"
+        : cloudState.status;
+  }
+  if (elements.cloudStatusCopy) {
+    const suffix = cloudState.user?.email ? ` Sesion: ${cloudState.user.email}.` : "";
+    elements.cloudStatusCopy.textContent = `${cloudState.message} ${unsupportedMessage}${suffix}`.trim();
+  }
+  const ready = Boolean(cloudState.client && cloudState.user && supported && !cloudState.syncInFlight);
+  if (elements.cloudConnectBtn) elements.cloudConnectBtn.disabled = !window.supabase || cloudState.syncInFlight;
+  if (elements.cloudSignInBtn) elements.cloudSignInBtn.disabled = !cloudState.client || cloudState.syncInFlight;
+  if (elements.cloudSignOutBtn) elements.cloudSignOutBtn.disabled = !cloudState.user || cloudState.syncInFlight;
+  if (elements.cloudUploadBtn) elements.cloudUploadBtn.disabled = !ready;
+  if (elements.cloudDownloadBtn) elements.cloudDownloadBtn.disabled = !ready;
+}
+
+function bindCloudAuthListener(client) {
+  if (!client || client.__codexAuthBound) return;
+  client.__codexAuthBound = true;
+  client.auth.onAuthStateChange((_event, session) => {
+    cloudState.session = session;
+    cloudState.user = session?.user || null;
+    setCloudStatus(
+      session?.user ? "conectado" : "listo",
+      session?.user
+        ? "Supabase conectado y listo para sincronizar."
+        : "Proyecto conectado. Envia el magic link para iniciar sesion.",
+    );
+  });
+}
+
+async function connectSupabaseClient() {
+  if (!window.supabase?.createClient) {
+    throw new Error("No se pudo cargar el cliente de Supabase en esta pagina.");
+  }
+  const { url, anonKey } = currentCloudConfig();
+  if (!url || !anonKey) {
+    throw new Error("Escribe Project URL y anon key antes de conectar.");
+  }
+  const client = window.supabase.createClient(url, anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+  bindCloudAuthListener(client);
+  cloudState.client = client;
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+  cloudState.session = data.session;
+  cloudState.user = data.session?.user || null;
+  setCloudStatus(
+    cloudState.user ? "conectado" : "listo",
+    cloudState.user
+      ? "Supabase conectado y listo para sincronizar."
+      : "Proyecto conectado. Envia el magic link para iniciar sesion.",
+  );
+}
+
+function sanitizeCloudKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || "save";
+}
+
+function currentCloudGameId() {
+  if (uiState.currentSystem === "ds" && dsSavePath) {
+    return sanitizeCloudKey(dsSavePath.replace(/^\/savefiles\//, "").replace(/\.sav$/i, ""));
+  }
+  if (uiState.currentSystem === "gba" && isGbaReady() && gbaCore?.mmu?.cart?.code) {
+    return sanitizeCloudKey(gbaCore.mmu.cart.code);
+  }
+  if (uiState.currentSystem === "gbc" && isGbcReady() && window.gameboy?.name) {
+    return sanitizeCloudKey(window.gameboy.name);
+  }
+  return sanitizeCloudKey(uiState.loadedRom?.name || `${uiState.currentSystem}-save`);
+}
+
+function buildCloudRecord(payload) {
+  if (!cloudState.user) {
+    throw new Error("Inicia sesion en Supabase antes de sincronizar.");
+  }
+  return {
+    user_id: cloudState.user.id,
+    system: uiState.currentSystem,
+    game_id: currentCloudGameId(),
+    save_kind: payload.type,
+    rom_name: uiState.loadedRom?.name || "",
+    payload_json: payload,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function currentDsSavePayload() {
+  if (!isDsReady()) {
+    throw new Error("Carga primero una ROM DS.");
+  }
+  if (!dsSavePath) {
+    throw new Error("Todavia no hay ruta de save DS activa.");
+  }
+  if (!window.FS?.analyzePath(dsSavePath).exists) {
+    throw new Error("La partida DS aun no genero un save en /savefiles.");
+  }
+  const raw = window.FS.readFile(dsSavePath);
+  return {
+    type: "ds-savefile",
+    system: uiState.currentSystem,
+    rom: uiState.loadedRom,
+    path: dsSavePath,
+    payload: bytesToBase64(raw),
+  };
+}
+
 function currentSavePayload() {
   if (!isReady()) {
     throw new Error("No hay emulacion activa para exportar.");
@@ -1771,7 +1970,7 @@ function currentSavePayload() {
   }
 
   if (uiState.currentSystem === "ds") {
-    throw new Error("La exportacion DS aun no esta conectada. Por ahora usa el guardado interno.");
+    return currentDsSavePayload();
   }
 
   if (uiState.currentSystem === "gba") {
@@ -1819,38 +2018,99 @@ function exportCurrentSave() {
   }
 }
 
+async function applyImportedSaveData(data) {
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    throw new Error("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
+  }
+  if (data.system !== uiState.currentSystem) {
+    throw new Error("El save importado no coincide con el sistema activo.");
+  }
+  if (uiState.currentSystem === "ds") {
+    if (!isDsReady()) throw new Error("Carga primero una ROM DS.");
+    if (!dsSavePath) throw new Error("Todavia no hay ruta de save DS activa.");
+    const bytes = base64ToBytes(data.payload);
+    window.FS.writeFile(dsSavePath, bytes);
+    if (window.WebMelon?.storage?.sync) {
+      window.WebMelon.storage.sync();
+    }
+    updateStatus("Save DS importado correctamente.");
+    renderStatePanel();
+    return;
+  }
+  if (uiState.currentSystem === "gba") {
+    if (!isGbaReady()) throw new Error("Carga primero una ROM GBA.");
+    gbaCore.decodeSavedata(data.payload);
+  } else {
+    if (!isGbcReady()) throw new Error("Carga primero una ROM GB/GBC.");
+    const keyName = gbcSaveSlotName("import");
+    window.localStorage.setItem(keyName, data.payload);
+    window.openState(keyName, elements.canvas);
+    setVolume(uiState.volume);
+    applySpeed();
+  }
+  updateStatus("Save importado correctamente.");
+  renderStatePanel();
+}
+
 async function importCurrentSave(file) {
   if (!file) return;
   try {
-    if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-      throw new Error("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
-    }
     const raw = await file.text();
     const data = JSON.parse(raw);
-    if (data.system !== uiState.currentSystem) {
-      throw new Error("El save importado no coincide con el sistema activo.");
-    }
-    if (uiState.currentSystem === "ds") {
-      throw new Error("La importacion DS aun no esta conectada.");
-    }
-    if (uiState.currentSystem === "gba") {
-      if (!isGbaReady()) throw new Error("Carga primero una ROM GBA.");
-      gbaCore.decodeSavedata(data.payload);
-    } else {
-      if (!isGbcReady()) throw new Error("Carga primero una ROM GB/GBC.");
-      const keyName = gbcSaveSlotName("import");
-      window.localStorage.setItem(keyName, data.payload);
-      window.openState(keyName, elements.canvas);
-      setVolume(uiState.volume);
-      applySpeed();
-    }
-    updateStatus("Save importado correctamente.");
-    renderStatePanel();
+    await applyImportedSaveData(data);
   } catch (error) {
     updateStatus(`No se pudo importar el save: ${error.message}`);
   } finally {
     elements.saveFileInput.value = "";
   }
+}
+
+async function syncCurrentSaveToCloud() {
+  if (!cloudSaveSupported()) {
+    throw new Error("La nube MVP solo esta activa para GB/GBC y GBA por ahora.");
+  }
+  if (!cloudState.client || !cloudState.user) {
+    throw new Error("Conecta Supabase e inicia sesion antes de subir saves.");
+  }
+  const payload = currentSavePayload();
+  const record = buildCloudRecord(payload);
+  cloudState.syncInFlight = true;
+  syncCloudUi();
+  const { error } = await cloudState.client
+    .from("cloud_saves")
+    .upsert(record, { onConflict: "user_id,system,game_id,save_kind" });
+  cloudState.syncInFlight = false;
+  syncCloudUi();
+  if (error) throw error;
+  setCloudStatus("conectado", `Save ${record.system.toUpperCase()} sincronizado en la nube.`);
+}
+
+async function restoreSaveFromCloud() {
+  if (!cloudSaveSupported()) {
+    throw new Error("La nube MVP solo esta activa para GB/GBC y GBA por ahora.");
+  }
+  if (!cloudState.client || !cloudState.user) {
+    throw new Error("Conecta Supabase e inicia sesion antes de restaurar saves.");
+  }
+  cloudState.syncInFlight = true;
+  syncCloudUi();
+  const { data, error } = await cloudState.client
+    .from("cloud_saves")
+    .select("payload_json")
+    .eq("user_id", cloudState.user.id)
+    .eq("system", uiState.currentSystem)
+    .eq("game_id", currentCloudGameId())
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  cloudState.syncInFlight = false;
+  syncCloudUi();
+  if (error) throw error;
+  if (!data?.payload_json) {
+    throw new Error("No hay un save en nube para este juego y sistema.");
+  }
+  await applyImportedSaveData(data.payload_json);
+  setCloudStatus("conectado", `Save ${uiState.currentSystem.toUpperCase()} restaurado desde la nube.`);
 }
 
 function renderOverlay() {
@@ -1921,6 +2181,9 @@ function syncFormState() {
   elements.filterIntensity.value = String(uiState.filterIntensity);
   elements.touchControlsToggle.checked = uiState.touchControls;
   elements.themeSelect.value = uiState.theme;
+  if (elements.cloudUrlInput) elements.cloudUrlInput.value = uiState.cloudUrl || "";
+  if (elements.cloudAnonKeyInput) elements.cloudAnonKeyInput.value = uiState.cloudAnonKey || "";
+  if (elements.cloudEmailInput) elements.cloudEmailInput.value = uiState.cloudEmail || "";
   elements.attackInputs.forEach((input, index) => {
     input.value = uiState.attackLabels[index];
   });
@@ -1970,6 +2233,7 @@ function applyVisualPrefs() {
   if (elements.ps1BiosBadge) {
     elements.ps1BiosBadge.textContent = desktopRuntime.biosFile ? "cargada" : "pendiente";
   }
+  syncCloudUi();
 }
 
 function keyLabelForKey(key) {
@@ -2532,6 +2796,7 @@ function gbaSaveSlotName(slot) {
 function teardownCurrentEmulator() {
   teardownDesktopRuntime();
   desktopRuntime.pendingLaunch = null;
+  dsSavePath = "";
   if (isDsReady()) {
     try {
       window.WebMelon.emulator.shutdown();
@@ -2683,6 +2948,14 @@ async function loadDsRom(file) {
     });
     ds.storage.prepareVirtualFilesystem();
   });
+  dsSavePath = `/savefiles/${ds.cart.getUnloadedCartCode()}.sav`;
+  if (typeof ds.storage.onSaveComplete === "function") {
+    ds.storage.onSaveComplete(() => {
+      if (cloudState.client && cloudState.user && cloudSaveSupported("ds")) {
+        syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar DS: ${error.message}`));
+      }
+    });
+  }
   uiState.loadedRom = {
     name: file.name,
     size: romData.byteLength,
@@ -2777,6 +3050,9 @@ function saveToSlot(slot) {
       return;
     }
     window.localStorage.setItem(gbaSaveSlotName(slot), savedata);
+    if (cloudState.client && cloudState.user && cloudSaveSupported()) {
+      syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
+    }
     afterInput(`save_slot_${slot}`, `SRAM de GBA guardado en slot ${slot}. Guarda progreso del juego, no un freeze state.`);
     return;
   }
@@ -2787,6 +3063,9 @@ function saveToSlot(slot) {
   }
 
   window.saveState(gbcSaveSlotName(slot));
+  if (cloudState.client && cloudState.user && cloudSaveSupported()) {
+    syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
+  }
   afterInput(`save_slot_${slot}`, `Save state guardado en slot ${slot}.`);
 }
 
@@ -3068,6 +3347,12 @@ applyVisualPrefs();
 renderStatePanel();
 updateStatus();
 bindDynamicElements();
+syncCloudUi();
+if ((uiState.cloudUrl || uiState.cloudAnonKey) && window.supabase?.createClient) {
+  connectSupabaseClient().catch((error) => {
+    setCloudStatus("error", `No pude conectar Supabase al arrancar: ${error.message}`);
+  });
+}
 
 elements.systemToggleButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -3346,6 +3631,104 @@ elements.importSaveBtn.addEventListener("click", () => {
 elements.drawerImportSaveBtn.addEventListener("click", () => {
   elements.saveFileInput.click();
 });
+
+if (elements.cloudUrlInput) {
+  elements.cloudUrlInput.addEventListener("input", (event) => {
+    uiState.cloudUrl = event.target.value.trim();
+    persistPrefs();
+  });
+}
+
+if (elements.cloudAnonKeyInput) {
+  elements.cloudAnonKeyInput.addEventListener("input", (event) => {
+    uiState.cloudAnonKey = event.target.value.trim();
+    persistPrefs();
+  });
+}
+
+if (elements.cloudEmailInput) {
+  elements.cloudEmailInput.addEventListener("input", (event) => {
+    uiState.cloudEmail = event.target.value.trim();
+    persistPrefs();
+  });
+}
+
+if (elements.cloudConnectBtn) {
+  elements.cloudConnectBtn.addEventListener("click", async () => {
+    try {
+      await connectSupabaseClient();
+      persistPrefs();
+      updateStatus("Supabase conectado.");
+    } catch (error) {
+      setCloudStatus("error", `No pude conectar Supabase: ${error.message}`);
+    }
+  });
+}
+
+if (elements.cloudSignInBtn) {
+  elements.cloudSignInBtn.addEventListener("click", async () => {
+    try {
+      if (!cloudState.client) {
+        await connectSupabaseClient();
+      }
+      const { email } = currentCloudConfig();
+      if (!email) {
+        throw new Error("Escribe tu email antes de pedir el magic link.");
+      }
+      const { error } = await cloudState.client.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.href,
+        },
+      });
+      if (error) throw error;
+      setCloudStatus("listo", "Magic link enviado. Revisa tu correo y vuelve a esta app.");
+      updateStatus("Magic link enviado.");
+    } catch (error) {
+      setCloudStatus("error", `No pude enviar el magic link: ${error.message}`);
+    }
+  });
+}
+
+if (elements.cloudSignOutBtn) {
+  elements.cloudSignOutBtn.addEventListener("click", async () => {
+    try {
+      if (!cloudState.client) return;
+      const { error } = await cloudState.client.auth.signOut();
+      if (error) throw error;
+      cloudState.user = null;
+      cloudState.session = null;
+      setCloudStatus("listo", "Sesion cerrada. Puedes iniciar con otro correo.");
+      updateStatus("Sesion Supabase cerrada.");
+    } catch (error) {
+      setCloudStatus("error", `No pude cerrar sesion: ${error.message}`);
+    }
+  });
+}
+
+if (elements.cloudUploadBtn) {
+  elements.cloudUploadBtn.addEventListener("click", async () => {
+    try {
+      await syncCurrentSaveToCloud();
+      updateStatus("Save subido a la nube.");
+    } catch (error) {
+      setCloudStatus("error", `No pude subir el save: ${error.message}`);
+      updateStatus(`No se pudo subir a nube: ${error.message}`);
+    }
+  });
+}
+
+if (elements.cloudDownloadBtn) {
+  elements.cloudDownloadBtn.addEventListener("click", async () => {
+    try {
+      await restoreSaveFromCloud();
+      updateStatus("Save restaurado desde la nube.");
+    } catch (error) {
+      setCloudStatus("error", `No pude restaurar el save: ${error.message}`);
+      updateStatus(`No se pudo restaurar desde nube: ${error.message}`);
+    }
+  });
+}
 
 elements.exportSaveBtn.addEventListener("click", exportCurrentSave);
 elements.drawerExportSaveBtn.addEventListener("click", exportCurrentSave);
