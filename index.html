@@ -31,7 +31,7 @@
         <div class="topbar">
           <div class="quick-actions" aria-label="Acciones rapidas">
             <label class="upload-btn" for="rom-input">Subir ROM</label>
-            <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds" />
+            <input id="rom-input" type="file" accept=".gb,.gbc,.gba,.nds,.smc,.sfc,.fig,.bs,.z64,.n64,.v64,.bin,.img,.pbp,.cue,.chd,.iso" />
             <button id="power-btn" type="button">Pausar</button>
             <button id="speed-btn" type="button">Velocidad x1</button>
             <button id="fullscreen-btn" type="button">Pantalla completa</button>
@@ -42,6 +42,9 @@
               <button type="button" class="system-toggle-btn" data-system-toggle="gbc" style="border-radius:0;">GB/GBC</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="gba" style="border-radius:0;">GBA</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="ds" style="border-radius:0;">DS</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="snes" style="border-radius:0;">SNES</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="n64" style="border-radius:0;">N64</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="ps1" style="border-radius:0;">PS1</button>
             </div>
             <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
               Menu
@@ -49,6 +52,8 @@
           </div>
 
           <div class="quick-strip" aria-label="Acciones de sesion">
+            <label class="secondary-upload-btn" for="ps1-bios-input">BIOS PS1</label>
+            <input id="ps1-bios-input" type="file" accept=".bin,.rom,.bios" />
             <button id="import-save-btn" type="button">Importar save</button>
             <button id="export-save-btn" type="button">Exportar save</button>
             <button id="reset-filter-btn" type="button">Reset visual</button>
@@ -69,6 +74,9 @@
               <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
               <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="snes">SNES</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="n64">N64</button>
+              <button type="button" class="system-toggle-btn" data-system-toggle="ps1">PS1</button>
             </div>
 
             <div class="console-topline" style="justify-content: center;">
@@ -253,6 +261,17 @@
               <button id="drawer-export-save-btn" type="button">Exportar save</button>
             </div>
             <input id="save-file-input" type="file" accept=".sav,.json,.txt" hidden />
+          </section>
+
+          <section class="panel-block">
+            <div class="panel-heading">
+              <h2>BIOS PS1</h2>
+              <span class="mini-badge" id="ps1-bios-badge">pendiente</span>
+            </div>
+            <p>PS1 necesita BIOS local para iniciar. La carga dura solo en esta sesion y no se guarda en el navegador.</p>
+            <div class="panel-actions">
+              <label class="upload-btn compact-upload" for="ps1-bios-input">Cargar BIOS PS1</label>
+            </div>
           </section>
 
           <section class="panel-block">

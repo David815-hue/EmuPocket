@@ -89,6 +89,26 @@ button:hover,
   background: linear-gradient(180deg, rgba(35, 45, 53, 0.85), rgba(18, 26, 32, 0.95));
 }
 
+.secondary-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(17, 25, 30, 0.12);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.secondary-upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
 button:active,
 .upload-btn:active {
   transform: translateY(1px);
@@ -255,11 +275,23 @@ body.focus-mode .app-header {
   pointer-events: none;
 }
 
+#ps1-bios-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .upload-btn,
 #toggle-menu-btn,
 #drawer-overlay-btn,
 #add-cheat-btn {
   background: linear-gradient(180deg, var(--accent), #cb5d3d);
+}
+
+.compact-upload {
+  padding: 10px 16px;
 }
 
 .play-layout {
@@ -365,6 +397,9 @@ body.focus-mode[data-system="ds"] .console-shell.system-shell--ds div.container 
 body.focus-mode[data-system="gbc"] .console-stage { transform: scale(min(calc(100vh / 600), calc(100vw / 380))); }
 body.focus-mode[data-system="gba"] .console-stage { transform: scale(1); }
 body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc(100vh / 850), calc(100vw / 500))); }
+body.focus-mode[data-system="snes"] .console-stage,
+body.focus-mode[data-system="n64"] .console-stage,
+body.focus-mode[data-system="ps1"] .console-stage { transform: scale(min(calc(100vh / 720), calc(100vw / 980))); }
 
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .topbody,
 body.focus-mode[data-system="ds"] .console-shell.system-shell--ds .midbar,
@@ -400,6 +435,268 @@ body.focus-mode .console-dock {
   pointer-events: none;
   transform: scale(0.95);
   position: absolute;
+}
+
+.console-shell.system-shell--desktop {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.desktop-rig {
+  width: min(920px, 100%);
+  display: grid;
+  gap: 20px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 38px;
+  color: #f5efe3;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 32%),
+    linear-gradient(160deg, rgba(10, 13, 19, 0.95), rgba(31, 40, 52, 0.97));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 34px 60px rgba(8, 10, 14, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+}
+
+.desktop-rig--snes {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 32%),
+    linear-gradient(150deg, #4d4759, #2d3346 52%, #181d29);
+}
+
+.desktop-rig--n64 {
+  background:
+    radial-gradient(circle at 15% 15%, rgba(182, 255, 201, 0.16), transparent 28%),
+    linear-gradient(150deg, #244341, #27354e 50%, #181b29);
+}
+
+.desktop-rig--ps1 {
+  color: #f7f3eb;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.2), transparent 26%),
+    linear-gradient(155deg, #cfc9bc, #8d8f92 45%, #54565d);
+}
+
+.desktop-header,
+.desktop-footer,
+.desktop-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.desktop-header h3,
+.desktop-kicker {
+  margin: 0;
+}
+
+.desktop-header h3 {
+  font-size: clamp(1.6rem, 3vw, 2.45rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.desktop-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.desktop-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.desktop-screen-board {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 24px);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(5, 8, 12, 0.18)),
+    rgba(8, 12, 18, 0.64);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desktop-leds {
+  display: flex;
+  gap: 8px;
+}
+
+.desktop-leds span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+.desktop-leds span:first-child {
+  background: #ff7b52;
+  box-shadow: 0 0 12px rgba(255, 123, 82, 0.48);
+}
+
+.desktop-screen-wrap {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  aspect-ratio: 256 / 224;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(222, 255, 211, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.4), rgba(6, 11, 12, 0.86));
+  border: 1px solid rgba(247, 247, 247, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 34px rgba(0, 0, 0, 0.4),
+    0 18px 28px rgba(0, 0, 0, 0.22);
+}
+
+.desktop-emulator-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #05080c;
+}
+
+.desktop-screen-wrap--wide {
+  aspect-ratio: 320 / 240;
+}
+
+body[data-system="snes"] .desktop-screen-wrap {
+  max-width: 820px;
+  transform: perspective(1200px) rotateX(1.2deg);
+}
+
+body[data-system="n64"] .desktop-screen-wrap,
+body[data-system="ps1"] .desktop-screen-wrap {
+  max-width: 840px;
+  transform: perspective(1200px) rotateX(1.2deg);
+}
+
+body[data-system="snes"] #screen,
+body[data-system="n64"] #screen,
+body[data-system="ps1"] #screen {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  background:
+    radial-gradient(circle at center, rgba(171, 229, 172, 0.12), transparent 50%),
+    linear-gradient(180deg, #1a241d, #0c110f);
+}
+
+.desktop-marquee,
+.desktop-meta {
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.desktop-meta {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.desktop-slot {
+  width: 96px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.desktop-slot--disc {
+  width: 110px;
+  height: 14px;
+}
+
+.desktop-slot--port {
+  width: 122px;
+  height: 16px;
+}
+
+.desktop-power-button {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  padding: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.34), transparent 25%),
+    linear-gradient(180deg, rgba(245, 249, 252, 0.18), rgba(15, 20, 25, 0.5));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.desktop-power-button.ready {
+  box-shadow: 0 0 0 2px rgba(255, 190, 96, 0.18), 0 0 22px rgba(255, 190, 96, 0.24);
+}
+
+body[data-system="ps1"] .desktop-rig,
+body[data-system="ps1"] .desktop-screen-board {
+  color: #17181d;
+}
+
+body[data-system="snes"] .desktop-header h3 {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body[data-system="snes"] .desktop-badge {
+  background: linear-gradient(90deg, rgba(192, 115, 255, 0.18), rgba(112, 179, 255, 0.14));
+}
+
+body[data-system="n64"] .desktop-badge {
+  background: linear-gradient(90deg, rgba(68, 206, 128, 0.18), rgba(65, 111, 255, 0.14));
+}
+
+body[data-system="ps1"] .desktop-badge,
+body[data-system="ps1"] .desktop-screen-board {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body[data-system="ps1"] .desktop-badge {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.42), rgba(232, 231, 226, 0.68));
+}
+
+body[data-system="ps1"] .desktop-marquee,
+body[data-system="ps1"] .desktop-meta,
+body[data-system="ps1"] .desktop-kicker {
+  opacity: 0.68;
+}
+
+body[data-system="snes"] .touch-controls,
+body[data-system="n64"] .touch-controls,
+body[data-system="ps1"] .touch-controls {
+  display: none !important;
+}
+
+body[data-system="snes"] .console-dock button:disabled,
+body[data-system="n64"] .console-dock button:disabled,
+body[data-system="ps1"] .console-dock button:disabled,
+body[data-system="snes"] .quick-strip button:disabled,
+body[data-system="n64"] .quick-strip button:disabled,
+body[data-system="ps1"] .quick-strip button:disabled {
+  opacity: 0.4;
 }
 
 .brand-chip,
