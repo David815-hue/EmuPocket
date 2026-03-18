@@ -691,6 +691,7 @@ function refreshElements() {
   elements.libraryHeroTime = document.querySelector("#library-hero-time");
   elements.libraryGrid = document.querySelector("#library-grid");
   elements.libraryViewButtons = [...document.querySelectorAll("[data-library-view]")];
+  elements.libraryPanel = document.querySelector("#library-panel");
   elements.stateOutput = document.querySelector("#state-output");
   elements.menuOverlay = document.querySelector("#menu-overlay");
   elements.toggleMenuBtn = document.querySelector("#toggle-menu-btn");
@@ -700,6 +701,7 @@ function refreshElements() {
   elements.drawerBackdrop = document.querySelector("#drawer-backdrop");
   elements.drawer = document.querySelector("#control-drawer");
   elements.quickMenuBtn = document.querySelector("#quick-menu-btn");
+  elements.openLibraryBtn = document.querySelector("#open-library-btn");
   elements.quickSaveBtn = document.querySelector("#quick-save-btn");
   elements.quickLoadBtn = document.querySelector("#quick-load-btn");
   elements.powerBtn = document.querySelector("#power-btn");
@@ -3965,6 +3967,13 @@ elements.drawerOverlayBtn.addEventListener("click", () => {
 
 elements.drawerToggleBtn.addEventListener("click", () => {
   setDrawerOpen(!uiState.drawerOpen);
+});
+
+elements.openLibraryBtn?.addEventListener("click", () => {
+  setDrawerOpen(true);
+  window.requestAnimationFrame(() => {
+    elements.libraryPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 });
 
 elements.quickMenuBtn.addEventListener("click", () => {
