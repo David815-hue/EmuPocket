@@ -450,7 +450,7 @@ const shellTemplates = {
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap">
             <canvas id="screen" width="256" height="224" aria-label="Pantalla Super Nintendo"></canvas>
-            <div id="screen-hint" class="screen-hint hidden">Modo de vitrina listo para SNES</div>
+            <div id="screen-hint" class="screen-hint hidden"></div>
             <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
           </div>
           <div id="screen-marquee" class="desktop-marquee">SUPER NINTENDO ENTERTAINMENT SYSTEM</div>
@@ -495,7 +495,7 @@ const shellTemplates = {
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap desktop-screen-wrap--wide">
             <canvas id="screen" width="320" height="240" aria-label="Pantalla Nintendo 64"></canvas>
-            <div id="screen-hint" class="screen-hint hidden">Modo de vitrina listo para N64</div>
+            <div id="screen-hint" class="screen-hint hidden"></div>
             <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
           </div>
           <div id="screen-marquee" class="desktop-marquee">NINTENDO 64 DISPLAY DECK</div>
@@ -541,7 +541,7 @@ const shellTemplates = {
           <div class="desktop-leds" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="screen-wrap" class="screen-wrap desktop-screen-wrap desktop-screen-wrap--wide">
             <canvas id="screen" width="320" height="240" aria-label="Pantalla PlayStation"></canvas>
-            <div id="screen-hint" class="screen-hint hidden">Modo de vitrina listo para PS1</div>
+            <div id="screen-hint" class="screen-hint hidden"></div>
             <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
           </div>
           <div id="screen-marquee" class="desktop-marquee">PLAYSTATION VIDEO OUT</div>
@@ -599,7 +599,7 @@ const shellTemplates = {
           <div class="display">
             <div id="screen-wrap" class="screen-wrap psp-display-wrap">
               <canvas id="screen" width="480" height="272" aria-label="Pantalla PlayStation Portable"></canvas>
-              <div id="screen-hint" class="screen-hint hidden">PSP listo para mockup</div>
+              <div id="screen-hint" class="screen-hint hidden"></div>
               <div id="menu-overlay" class="menu-overlay hidden" aria-hidden="true"></div>
             </div>
           </div>
@@ -3301,6 +3301,12 @@ function applyDsInputSettings() {
 }
 
 function ensureDsRuntime() {
+  if (!window.WebMelon) {
+    throw new Error("WebMelon DS no cargo en esta pagina. Revisa que Vercel este sirviendo webmelon.js y wasmemulator.js.");
+  }
+  if (!window.WebMelon.assembly || typeof window.WebMelon.assembly.addLoadListener !== "function") {
+    throw new Error("WebMelon DS no pudo inicializarse en este deploy. Revisa headers COOP/COEP, la ruta de wasmemulator.wasm y /app-config.js en Vercel.");
+  }
   if (dsReadyPromise) {
     return dsReadyPromise;
   }
