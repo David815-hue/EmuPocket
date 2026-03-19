@@ -942,7 +942,23 @@ body.focus-mode[data-system="ds"] .console-shell.system-shell--ds div.container 
   margin: 0 auto !important;
 }
 
-body.focus-mode[data-system="gbc"] .console-stage { transform: scale(min(calc(100vh / 600), calc(100vw / 380))); }
+body.focus-mode[data-system="gbc"] .console-stage { transform: none !important; }
+body.focus-mode[data-system="gbc"] .console-shell-host {
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+body.focus-mode[data-system="gbc"] .console-shell.system-shell--gbc {
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+body.focus-mode[data-system="gbc"] .console-shell.system-shell--gbc .gameboy {
+  transform: scale(calc(min(calc((100vh - 108px) / 570), calc((100vw - 56px) / 350)) * 1.05));
+  transform-origin: center center;
+}
 body.focus-mode[data-system="gba"] .console-stage { transform: scale(1); }
 body.focus-mode[data-system="ds"]  .console-stage { transform: scale(min(calc(100vh / 850), calc(100vw / 500))); }
 body.focus-mode[data-system="snes"] .console-stage,
