@@ -1287,6 +1287,51 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
           } catch (error) {}
         });
       };
+      window.__codexNormalizeToolbarText = function (value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      };
+      window.__codexFindToolbarActionButton = function (action) {
+        const aliases = {
+          enterFullscreen: ["enterfullscreen", "enter fullscreen", "fullscreen", "full screen"],
+          exitFullscreen: ["exitfullscreen", "exit fullscreen", "leave fullscreen", "fullscreen"],
+          fullscreen: ["fullscreen", "full screen"],
+        };
+        const targets = aliases[action] || [action];
+        const nodes = Array.from(document.querySelectorAll("button, [role='button'], [data-btn], [data-action], [title], [aria-label]"));
+        return nodes.find((node) => {
+          if (!(node instanceof HTMLElement)) return false;
+          const haystack = window.__codexNormalizeToolbarText([
+            node.id,
+            node.className,
+            node.getAttribute("title"),
+            node.getAttribute("aria-label"),
+            node.getAttribute("data-btn"),
+            node.getAttribute("data-action"),
+            node.getAttribute("data-name"),
+            node.textContent,
+          ].join(" "));
+          return targets.some((target) => haystack.includes(window.__codexNormalizeToolbarText(target)));
+        });
+      };
+      window.__codexTriggerToolbarAction = function (action) {
+        const button = window.__codexFindToolbarActionButton(action);
+        if (!button) return false;
+        button.click();
+        return true;
+      };
+      window.__codexToggleToolbarFullscreen = function () {
+        const isFullscreen = Boolean(document.fullscreenElement);
+        if (isFullscreen && window.__codexTriggerToolbarAction("exitFullscreen")) {
+          return true;
+        }
+        if (window.__codexTriggerToolbarAction("enterFullscreen")) {
+          return true;
+        }
+        return window.__codexTriggerToolbarAction("fullscreen");
+      };
       window.__codexBytesToBase64 = function (bytes) {
         let binary = "";
         const chunk = 32768;
@@ -3915,7 +3960,24 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+function tryToggleEmulatorJsToolbarFullscreen() {
+  const frameWindow = desktopRuntime.iframe?.contentWindow;
+  if (!frameWindow || typeof frameWindow.__codexToggleToolbarFullscreen !== "function") {
+    return false;
+  }
+  try {
+    focusDesktopFrame();
+    return frameWindow.__codexToggleToolbarFullscreen() === true;
+  } catch (error) {
+    console.warn("No se pudo usar el fullscreen interno de EmulatorJS", error);
+    return false;
+  }
+}
+
 async function toggleFullscreen() {
+  if (desktopRuntime.active && EMULATORJS_SYSTEMS.has(uiState.currentSystem) && tryToggleEmulatorJsToolbarFullscreen()) {
+    return;
+  }
   if (fullscreenState.active || document.fullscreenElement) {
     await exitEmulationFullscreen();
     return;
