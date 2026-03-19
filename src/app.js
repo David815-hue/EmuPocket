@@ -98,6 +98,8 @@ const pspAnalogState = {
   pointerId: null,
   activeDirections: new Set(),
 };
+const DS_SCREEN_WIDTH = 256;
+const DS_SCREEN_HEIGHT = 192;
 const desktopRuntime = {
   active: false,
   currentSystem: "",
@@ -110,6 +112,9 @@ const desktopRuntime = {
   pendingLaunch: null,
   bridgeReady: false,
   savePath: "",
+  dsMirrorFrameId: 0,
+  dsPointerBindings: [],
+  dsHostVisibilityTimeout: 0,
 };
 const cloudState = {
   client: null,
@@ -1052,6 +1057,211 @@ function refreshDesktopFramePresentation() {
   });
 }
 
+function setDsMirrorHostVisibility(visible) {
+  if (desktopRuntime.dsHostVisibilityTimeout) {
+    window.clearTimeout(desktopRuntime.dsHostVisibilityTimeout);
+    desktopRuntime.dsHostVisibilityTimeout = 0;
+  }
+  if (!elements.body) return;
+  if (visible) {
+    elements.body.dataset.dsHostVisible = "true";
+    return;
+  }
+  delete elements.body.dataset.dsHostVisible;
+}
+
+function getDesktopFrameDocument() {
+  return desktopRuntime.iframe?.contentWindow?.document || null;
+}
+
+function isCanvasElement(node) {
+  return Boolean(
+    node
+    && typeof node.getContext === "function"
+    && typeof node.width === "number"
+    && typeof node.height === "number"
+  );
+}
+
+function getDesktopPrimaryCanvas(frameDocument = getDesktopFrameDocument()) {
+  if (!frameDocument) return null;
+  const candidates = Array.from(frameDocument.querySelectorAll("#game canvas, canvas"))
+    .filter((canvas) => isCanvasElement(canvas) && canvas.width > 0 && canvas.height > 0)
+    .sort((left, right) => (right.width * right.height) - (left.width * left.height));
+  return candidates[0] || null;
+}
+
+function getDsSourceCanvas() {
+  if (!desktopRuntime.active || desktopRuntime.currentSystem !== "ds") return null;
+  return getDesktopPrimaryCanvas();
+}
+
+function getDsSourceLayout(sourceCanvas = getDsSourceCanvas()) {
+  if (!isCanvasElement(sourceCanvas)) return null;
+  const width = Number(sourceCanvas.width) || 0;
+  const height = Number(sourceCanvas.height) || 0;
+  if (!width || !height) return null;
+  if (height >= width) {
+    const splitHeight = Math.floor(height / 2);
+    return {
+      top: { sx: 0, sy: 0, sw: width, sh: splitHeight },
+      bottom: { sx: 0, sy: splitHeight, sw: width, sh: height - splitHeight },
+    };
+  }
+  const splitWidth = Math.floor(width / 2);
+  return {
+    top: { sx: 0, sy: 0, sw: splitWidth, sh: height },
+    bottom: { sx: splitWidth, sy: 0, sw: width - splitWidth, sh: height },
+  };
+}
+
+function drawDsMirrorSegment(targetCanvas, sourceCanvas, segment) {
+  if (!isCanvasElement(targetCanvas) || !isCanvasElement(sourceCanvas) || !segment) return;
+  const context = targetCanvas.getContext("2d", { alpha: false });
+  if (!context) return;
+  context.imageSmoothingEnabled = false;
+  context.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  try {
+    context.drawImage(
+      sourceCanvas,
+      segment.sx,
+      segment.sy,
+      segment.sw,
+      segment.sh,
+      0,
+      0,
+      targetCanvas.width,
+      targetCanvas.height,
+    );
+  } catch (error) {}
+}
+
+function unbindDsPointerBridge() {
+  desktopRuntime.dsPointerBindings.forEach(({ node, type, listener }) => {
+    node.removeEventListener(type, listener);
+  });
+  desktopRuntime.dsPointerBindings = [];
+}
+
+function dispatchDsPointerEventToIframe(event, screenKey) {
+  const frameWindow = desktopRuntime.iframe?.contentWindow;
+  const sourceCanvas = getDsSourceCanvas();
+  const sourceLayout = getDsSourceLayout(sourceCanvas);
+  const targetCanvas = event.currentTarget;
+  if (!frameWindow || !isCanvasElement(sourceCanvas) || !sourceLayout || !isCanvasElement(targetCanvas)) {
+    return;
+  }
+  const targetRect = targetCanvas.getBoundingClientRect();
+  const sourceRect = sourceCanvas.getBoundingClientRect();
+  if (!targetRect.width || !targetRect.height || !sourceRect.width || !sourceRect.height) return;
+
+  const pointerX = Math.max(0, Math.min(1, (event.clientX - targetRect.left) / targetRect.width));
+  const pointerY = Math.max(0, Math.min(1, (event.clientY - targetRect.top) / targetRect.height));
+  const segment = screenKey === "bottom" ? sourceLayout.bottom : sourceLayout.top;
+  const mappedClientX = sourceRect.left + (((segment.sx + (pointerX * segment.sw)) / sourceCanvas.width) * sourceRect.width);
+  const mappedClientY = sourceRect.top + (((segment.sy + (pointerY * segment.sh)) / sourceCanvas.height) * sourceRect.height);
+  const eventInit = {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    pointerId: event.pointerId,
+    pointerType: event.pointerType || "mouse",
+    isPrimary: event.isPrimary,
+    button: event.button,
+    buttons: event.buttons,
+    clientX: mappedClientX,
+    clientY: mappedClientY,
+    screenX: mappedClientX,
+    screenY: mappedClientY,
+    pageX: mappedClientX + frameWindow.scrollX,
+    pageY: mappedClientY + frameWindow.scrollY,
+    ctrlKey: event.ctrlKey,
+    altKey: event.altKey,
+    shiftKey: event.shiftKey,
+    metaKey: event.metaKey,
+    pressure: event.pressure || (event.buttons ? 0.5 : 0),
+    width: event.width || 1,
+    height: event.height || 1,
+  };
+  try {
+    if (typeof frameWindow.PointerEvent === "function") {
+      sourceCanvas.dispatchEvent(new frameWindow.PointerEvent(event.type, eventInit));
+    } else {
+      const fallbackType = event.type.replace("pointer", "mouse");
+      sourceCanvas.dispatchEvent(new frameWindow.MouseEvent(fallbackType, eventInit));
+    }
+  } catch (error) {}
+}
+
+function bindDsPointerBridge() {
+  unbindDsPointerBridge();
+  if (uiState.currentSystem !== "ds") return;
+  const targets = [
+    { node: elements.dsTopCanvas, screenKey: "top" },
+    { node: elements.dsBottomCanvas, screenKey: "bottom" },
+  ].filter(({ node }) => isCanvasElement(node));
+
+  targets.forEach(({ node, screenKey }) => {
+    ["pointerdown", "pointermove", "pointerup", "pointercancel"].forEach((type) => {
+      const listener = (event) => {
+        if (!desktopRuntime.active || desktopRuntime.currentSystem !== "ds") return;
+        if (type === "pointerdown") {
+          try {
+            node.setPointerCapture(event.pointerId);
+          } catch (error) {}
+        }
+        dispatchDsPointerEventToIframe(event, screenKey);
+        if (type === "pointerup" || type === "pointercancel") {
+          try {
+            node.releasePointerCapture(event.pointerId);
+          } catch (error) {}
+        }
+        focusDesktopFrame();
+        event.preventDefault();
+      };
+      node.addEventListener(type, listener);
+      desktopRuntime.dsPointerBindings.push({ node, type, listener });
+    });
+  });
+}
+
+function stopDsScreenMirror({ clearScreens = false } = {}) {
+  if (desktopRuntime.dsMirrorFrameId) {
+    window.cancelAnimationFrame(desktopRuntime.dsMirrorFrameId);
+    desktopRuntime.dsMirrorFrameId = 0;
+  }
+  unbindDsPointerBridge();
+  setDsMirrorHostVisibility(false);
+  if (!clearScreens) return;
+  [elements.dsTopCanvas, elements.dsBottomCanvas].forEach((canvas) => {
+    if (!isCanvasElement(canvas)) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  });
+}
+
+function renderDsScreenMirror() {
+  if (!desktopRuntime.active || desktopRuntime.currentSystem !== "ds") {
+    desktopRuntime.dsMirrorFrameId = 0;
+    return;
+  }
+  const sourceCanvas = getDsSourceCanvas();
+  const sourceLayout = getDsSourceLayout(sourceCanvas);
+  if (sourceCanvas && sourceLayout) {
+    drawDsMirrorSegment(elements.dsTopCanvas, sourceCanvas, sourceLayout.top);
+    drawDsMirrorSegment(elements.dsBottomCanvas, sourceCanvas, sourceLayout.bottom);
+  }
+  desktopRuntime.dsMirrorFrameId = window.requestAnimationFrame(renderDsScreenMirror);
+}
+
+function startDsScreenMirror() {
+  stopDsScreenMirror();
+  if (uiState.currentSystem !== "ds") return;
+  bindDsPointerBridge();
+  desktopRuntime.dsMirrorFrameId = window.requestAnimationFrame(renderDsScreenMirror);
+}
+
 function getActiveEmulatorHost(system = uiState.currentSystem) {
   if (system === "ds") {
     return document.querySelector("#ds-emulator-host");
@@ -1131,6 +1341,7 @@ function teardownDesktopRuntime({ preserveBios = true, preserveAssets = false } 
     reject(new Error("El core web se cerro antes de completar el save."));
   });
   desktopBridge.pending.clear();
+  stopDsScreenMirror();
   if (desktopRuntime.iframe && desktopRuntime.iframe.parentNode) {
     desktopRuntime.iframe.remove();
   }
@@ -1507,6 +1718,9 @@ async function startDesktopRuntime({ system, file, assetUrls = [] }) {
       refreshDesktopFramePresentation();
     };
   }
+  if (system === "ds") {
+    startDsScreenMirror();
+  }
 }
 
 function loadPendingDesktopRuntime() {
@@ -1869,6 +2083,11 @@ function setCurrentSystem(system) {
     bindDynamicElements();
   }
   syncCanvasResolution(system);
+  if (system === "ds" && desktopRuntime.active) {
+    startDsScreenMirror();
+  } else if (system !== "ds") {
+    stopDsScreenMirror();
+  }
 }
 
 function ensureShellElements(system = uiState.currentSystem) {
@@ -1911,10 +2130,10 @@ function syncCanvasResolution(system = uiState.currentSystem) {
   }
   if (system === "ds") {
     if (!elements.dsTopCanvas || !elements.dsBottomCanvas) return;
-    elements.dsTopCanvas.width = 256;
-    elements.dsTopCanvas.height = 192;
-    elements.dsBottomCanvas.width = 256;
-    elements.dsBottomCanvas.height = 192;
+    elements.dsTopCanvas.width = DS_SCREEN_WIDTH;
+    elements.dsTopCanvas.height = DS_SCREEN_HEIGHT;
+    elements.dsBottomCanvas.width = DS_SCREEN_WIDTH;
+    elements.dsBottomCanvas.height = DS_SCREEN_HEIGHT;
     return;
   }
   if (!elements.canvas) return;
@@ -3955,6 +4174,11 @@ window.setInterval(() => {
 }, DESKTOP_CLOUD_SYNC_INTERVAL);
 
 document.addEventListener("fullscreenchange", () => {
+  if (uiState.currentSystem === "ds" && desktopRuntime.active && document.fullscreenElement && !fullscreenState.active) {
+    setDsMirrorHostVisibility(true);
+  } else {
+    setDsMirrorHostVisibility(false);
+  }
   if (!document.fullscreenElement && fullscreenState.active) {
     cleanupEmulationFullscreen();
   }
@@ -3966,9 +4190,23 @@ function tryToggleEmulatorJsToolbarFullscreen() {
     return false;
   }
   try {
+    if (uiState.currentSystem === "ds") {
+      setDsMirrorHostVisibility(true);
+    }
     focusDesktopFrame();
-    return frameWindow.__codexToggleToolbarFullscreen() === true;
+    const didToggle = frameWindow.__codexToggleToolbarFullscreen() === true;
+    if (uiState.currentSystem === "ds" && didToggle) {
+      desktopRuntime.dsHostVisibilityTimeout = window.setTimeout(() => {
+        if (!document.fullscreenElement) {
+          setDsMirrorHostVisibility(false);
+        }
+      }, 600);
+    }
+    return didToggle;
   } catch (error) {
+    if (uiState.currentSystem === "ds") {
+      setDsMirrorHostVisibility(false);
+    }
     console.warn("No se pudo usar el fullscreen interno de EmulatorJS", error);
     return false;
   }

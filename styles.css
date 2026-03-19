@@ -2217,8 +2217,25 @@ body[data-system="psp"] .console-shell-host {
 }
 
 body.focus-mode[data-system="psp"] .console-shell.system-shell--psp {
+  --psp-shell-scale: 1.72;
   display: flex;
   justify-content: center;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+body.focus-mode[data-system="psp"] .console-shell-host {
+  min-height: 0 !important;
+  height: auto !important;
+  width: auto !important;
+  overflow: visible !important;
+}
+
+body.focus-mode[data-system="psp"] .console-shell.system-shell--psp .psp-3000 {
+  transform: scale(var(--psp-shell-scale)) !important;
+  transform-origin: center center !important;
 }
 
 .desktop-emulator-frame {
@@ -2237,19 +2254,27 @@ body.focus-mode[data-system="psp"] .console-shell.system-shell--psp {
 
 .ds-emulator-host {
   position: absolute;
-  top: -110px;
+  top: 28px;
   left: 50%;
-  width: 260px;
-  height: 520px;
+  width: 256px;
+  height: 384px;
   transform: translateX(-50%);
-  z-index: 12;
+  z-index: 0;
   overflow: hidden;
   border-radius: 18px;
-  pointer-events: auto;
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
 }
 
 body[data-system="ds"] .ds-emulator-host .desktop-emulator-frame {
   border-radius: 18px;
+}
+
+body[data-system="ds"][data-ds-host-visible="true"] .ds-emulator-host {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 12;
 }
 
 .desktop-screen-wrap--wide {
@@ -4775,6 +4800,11 @@ body[data-system="gba"] .screen-marquee {
   white-space: nowrap;
 }
 
+body[data-system="gba"] .screen-border > img,
+body[data-system="gba"] .screen-marquee {
+  display: none !important;
+}
+
 body[data-system="gba"] .label,
 body[data-system="gba"] .console-emblem,
 body[data-system="gba"] .power,
@@ -5657,6 +5687,7 @@ body[data-system="ds"] #ds-top-screen {
   aspect-ratio: auto;
   background: linear-gradient(135deg, #706e70 0%, #454545 100%);
   box-shadow: 0 0 2px 1px rgba(71, 71, 71, 1);
+  touch-action: none;
 }
 
 body[data-system="ds"] .ds-corner-pads {
@@ -5846,6 +5877,7 @@ body[data-system="ds"] #ds-bottom-screen {
   height: 100%;
   aspect-ratio: auto;
   background: transparent;
+  touch-action: none;
 }
 
 body[data-system="ds"] .controls.physical-controls {
@@ -6213,7 +6245,8 @@ body.focus-mode .console-stage {
 }
 
 body.focus-mode[data-system="psp"] .console-stage {
-  max-width: min(100vw - 20px, 1120px);
+  max-width: none;
+  width: auto;
 }
 
 body.focus-mode .console-shell-host {
