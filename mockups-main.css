@@ -1009,7 +1009,7 @@ position: absolute;
     clip-path: inset(50%);
 }
 .console-shell.system-shell--ds {
-
+position: relative;
 }
 .console-shell.system-shell--ds div.container {
 margin: auto;
@@ -1807,5 +1807,4 @@ position: absolute;
   -moz-box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
   box-shadow: inset -2px -2px 2px 0px rgba(10, 10, 10, 1), 1px -1px 2px 0px rgba(77, 77, 77, 1);
 }
-
 

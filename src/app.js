@@ -1,15 +1,27 @@
 const STORAGE_KEY = "gbc-web-prototype-prefs-v3";
-const GBC_SAVE_PREFIX = "FREEZE_CUSTOM_";
-const GBA_SAVE_PREFIX = "GBA_SAVE_SLOT_";
-const GBA_BIOS_URL = "./vendor/gba-js/resources/bios.bin";
 const DESKTOP_SYSTEMS = new Set(["snes", "n64", "ps1"]);
-const EMULATORJS_SYSTEMS = new Set([...DESKTOP_SYSTEMS, "psp"]);
-const CLOUD_SUPPORTED_SYSTEMS = new Set(["gbc", "gba", "ds", ...EMULATORJS_SYSTEMS]);
+const EMULATORJS_SYSTEMS = new Set(["gbc", "gba", "ds", ...DESKTOP_SYSTEMS, "psp"]);
+const CLOUD_SUPPORTED_SYSTEMS = new Set([...EMULATORJS_SYSTEMS]);
 const LIBRARY_MAX_ITEMS = 10;
 const DESKTOP_CLOUD_SYNC_INTERVAL = 12000;
 const DESKTOP_EMULATOR_VERSION = "stable";
 const DESKTOP_PATH_TO_DATA = `https://cdn.emulatorjs.org/${DESKTOP_EMULATOR_VERSION}/data/`;
 const DESKTOP_CORE_CONFIG = {
+  gbc: {
+    core: "gb",
+    label: "GB/GBC",
+    extensions: ["gb", "gbc"],
+  },
+  gba: {
+    core: "gba",
+    label: "GBA",
+    extensions: ["gba"],
+  },
+  ds: {
+    core: "nds",
+    label: "DS",
+    extensions: ["nds"],
+  },
   snes: {
     core: "snes",
     label: "SNES",
@@ -33,10 +45,9 @@ const DESKTOP_CORE_CONFIG = {
     requiresThreads: true,
   },
 };
-const ALL_SUPPORTED_ROM_EXTENSIONS = new Set([
-  "gb", "gbc", "gba", "nds",
-  ...Object.values(DESKTOP_CORE_CONFIG).flatMap((config) => config.extensions),
-]);
+const ALL_SUPPORTED_ROM_EXTENSIONS = new Set(
+  Object.values(DESKTOP_CORE_CONFIG).flatMap((config) => config.extensions),
+);
 
 const defaultKeyBindings = {
   arrowup: "up",
@@ -411,6 +422,8 @@ const shellTemplates = {
           </div>
         </div>
       </div>
+
+      <div id="ds-emulator-host" class="ds-emulator-host"></div>
 
       <div class="app-compat-placeholder" aria-hidden="true">
         <div id="screen-wrap" class="screen-wrap">
@@ -869,18 +882,11 @@ const uiState = {
   currentSystem: getInitialSystemFromPage(),
   loadedRom: null,
   awaitingStart: false,
-  dsStarted: false,
-  dsPaused: false,
   paused: false,
   lastInput: "none",
   lastStatusExtra: "",
   keymapCaptureAction: "",
 };
-
-let gbaCore = null;
-let gbaBiosBuffer = null;
-let dsReadyPromise = null;
-let dsSavePath = "";
 
 function desktopNeedsBios(system = uiState.currentSystem) {
   return DESKTOP_CORE_CONFIG[system]?.requiresBios === true;
@@ -890,22 +896,44 @@ function emulatorJsNeedsThreads(system = uiState.currentSystem) {
   return DESKTOP_CORE_CONFIG[system]?.requiresThreads === true;
 }
 
+function emulatorJsControlValueForAction(action) {
+  const boundKey = getBoundKeyForAction(action)
+    || Object.keys(defaultKeyBindings).find((candidate) => defaultKeyBindings[candidate] === action)
+    || "";
+  const labels = {
+    arrowup: "up arrow",
+    arrowdown: "down arrow",
+    arrowleft: "left arrow",
+    arrowright: "right arrow",
+    enter: "enter",
+    backspace: "backspace",
+    escape: "escape",
+    shift: "shift",
+    tab: "tab",
+    " ": "space",
+  };
+  return labels[String(boundKey || "").toLowerCase()] || String(boundKey || "").toLowerCase();
+}
+
 function emulatorJsDefaultControls() {
   return {
     0: {
-      0: "x",
-      1: "v",
-      2: "Backspace",
-      3: "Enter",
-      4: "ArrowUp",
-      5: "ArrowDown",
-      6: "ArrowLeft",
-      7: "ArrowRight",
-      8: "z",
-      9: "c",
-      10: "a",
-      11: "s",
+      0: { value: emulatorJsControlValueForAction("b"), value2: "BUTTON_2" },
+      1: { value: emulatorJsControlValueForAction("y"), value2: "BUTTON_4" },
+      2: { value: emulatorJsControlValueForAction("select"), value2: "SELECT" },
+      3: { value: emulatorJsControlValueForAction("start"), value2: "START" },
+      4: { value: emulatorJsControlValueForAction("up"), value2: "DPAD_UP" },
+      5: { value: emulatorJsControlValueForAction("down"), value2: "DPAD_DOWN" },
+      6: { value: emulatorJsControlValueForAction("left"), value2: "DPAD_LEFT" },
+      7: { value: emulatorJsControlValueForAction("right"), value2: "DPAD_RIGHT" },
+      8: { value: emulatorJsControlValueForAction("a"), value2: "BUTTON_1" },
+      9: { value: emulatorJsControlValueForAction("x"), value2: "BUTTON_3" },
+      10: { value: emulatorJsControlValueForAction("l"), value2: "LEFT_TOP_SHOULDER" },
+      11: { value: emulatorJsControlValueForAction("r"), value2: "RIGHT_TOP_SHOULDER" },
     },
+    1: {},
+    2: {},
+    3: {},
   };
 }
 
@@ -930,18 +958,131 @@ function keyEventValueForBinding(key) {
   return specialMap[normalized] || key;
 }
 
+function keyEventCodeForBinding(key) {
+  const normalized = String(key || "").toLowerCase();
+  const specialMap = {
+    arrowup: "ArrowUp",
+    arrowdown: "ArrowDown",
+    arrowleft: "ArrowLeft",
+    arrowright: "ArrowRight",
+    enter: "Enter",
+    backspace: "Backspace",
+    escape: "Escape",
+    shift: "ShiftLeft",
+    tab: "Tab",
+    " ": "Space",
+  };
+  if (specialMap[normalized]) {
+    return specialMap[normalized];
+  }
+  if (normalized.length === 1 && normalized >= "a" && normalized <= "z") {
+    return `Key${normalized.toUpperCase()}`;
+  }
+  if (normalized.length === 1 && normalized >= "0" && normalized <= "9") {
+    return `Digit${normalized}`;
+  }
+  return key;
+}
+
+function keyEventKeyCodeForBinding(key) {
+  const normalized = String(key || "").toLowerCase();
+  const specialMap = {
+    arrowup: 38,
+    arrowdown: 40,
+    arrowleft: 37,
+    arrowright: 39,
+    enter: 13,
+    backspace: 8,
+    escape: 27,
+    shift: 16,
+    tab: 9,
+    " ": 32,
+  };
+  if (specialMap[normalized]) {
+    return specialMap[normalized];
+  }
+  if (normalized.length === 1) {
+    return normalized.toUpperCase().charCodeAt(0);
+  }
+  return 0;
+}
+
+function focusDesktopFrame() {
+  if (!desktopRuntime.iframe?.contentWindow) return;
+  try {
+    if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+      document.activeElement.blur();
+    }
+  } catch (error) {}
+  try {
+    desktopRuntime.iframe.focus();
+  } catch (error) {}
+  try {
+    desktopRuntime.iframe.contentWindow.focus();
+  } catch (error) {}
+  try {
+    desktopRuntime.iframe.contentWindow.document.body?.focus();
+  } catch (error) {}
+  try {
+    desktopRuntime.iframe.contentWindow.document.querySelector("canvas")?.focus();
+  } catch (error) {}
+}
+
+function refreshDesktopFramePresentation() {
+  const iframe = desktopRuntime.iframe;
+  const frameWindow = iframe?.contentWindow;
+  if (!iframe || !frameWindow) return;
+  try {
+    iframe.style.opacity = "1";
+    iframe.style.filter = "none";
+    iframe.style.transform = "translateZ(0)";
+  } catch (error) {}
+  const pumpResize = () => {
+    try {
+      frameWindow.dispatchEvent(new Event("resize"));
+    } catch (error) {}
+    try {
+      frameWindow.document.dispatchEvent(new Event("visibilitychange"));
+    } catch (error) {}
+  };
+  pumpResize();
+  window.requestAnimationFrame(() => {
+    pumpResize();
+    window.setTimeout(pumpResize, 120);
+  });
+}
+
+function getActiveEmulatorHost(system = uiState.currentSystem) {
+  if (system === "ds") {
+    return document.querySelector("#ds-emulator-host");
+  }
+  return elements.screenWrap;
+}
+
 function dispatchEmulatorJsKey(action, eventType) {
   const boundKey = getBoundKeyForAction(action);
   if (!boundKey || !desktopRuntime.iframe?.contentWindow) return;
   const frameWindow = desktopRuntime.iframe.contentWindow;
   const key = keyEventValueForBinding(boundKey);
-  frameWindow.focus();
+  const code = keyEventCodeForBinding(boundKey);
+  const keyCode = keyEventKeyCodeForBinding(boundKey);
+  focusDesktopFrame();
   if (typeof frameWindow.__codexDispatchKey === "function") {
-    frameWindow.__codexDispatchKey(key, eventType);
+    frameWindow.__codexDispatchKey({
+      key,
+      code,
+      keyCode,
+      which: keyCode,
+      eventType,
+    });
     return;
   }
   const payload = {
     key,
+    code,
+    keyCode,
+    which: keyCode,
+    charCode: keyCode,
     bubbles: true,
     cancelable: true,
   };
@@ -1115,11 +1256,27 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
           mediaNode.muted = normalized <= 0;
         });
       };
-      window.__codexDispatchKey = function (key, eventType = "keydown") {
-        const payload = { key, bubbles: true, cancelable: true };
+      window.__codexDispatchKey = function (input, fallbackType = "keydown") {
+        const payload = typeof input === "object" && input
+          ? {
+              key: input.key || "",
+              code: input.code || "",
+              keyCode: input.keyCode || 0,
+              which: input.which || input.keyCode || 0,
+              charCode: input.charCode || input.keyCode || 0,
+              bubbles: true,
+              cancelable: true,
+            }
+          : {
+              key: input || "",
+              bubbles: true,
+              cancelable: true,
+            };
+        const eventType = typeof input === "object" && input ? (input.eventType || fallbackType) : fallbackType;
         const targets = [
           window,
           document,
+          document.body,
           document.activeElement,
           document.querySelector("canvas"),
           document.querySelector("#game"),
@@ -1200,7 +1357,7 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
           return;
         }
         if (event.data.command === "dispatch-key" && event.data.value) {
-          window.__codexDispatchKey(event.data.value.key, event.data.value.eventType);
+          window.__codexDispatchKey(event.data.value, event.data.value.eventType);
           return;
         }
         if (event.data.command === "export-save-payload") {
@@ -1231,7 +1388,7 @@ function buildDesktopIframeMarkup(system, romUrl, biosUrl = "", gameId = system)
       window.EJS_gameID = ${escapedGameId};
       window.EJS_gameId = ${escapedGameId};
       window.EJS_defaultControls = ${JSON.stringify(emulatorJsDefaultControls())};
-      window.EJS_language = "es-ES";
+      window.EJS_language = "es";
       window.EJS_startOnLoaded = true;
       window.EJS_color = "#10151b";
       window.EJS_ready = function () {
@@ -1284,7 +1441,11 @@ async function startDesktopRuntime({ system, file, assetUrls = [] }) {
     desktopRuntime.biosObjectUrl,
     `${system}:${file.name}`,
   );
-  elements.screenWrap.appendChild(iframe);
+  const emulatorHost = getActiveEmulatorHost(system);
+  if (!emulatorHost) {
+    throw new Error(`No encontre el host visual para ${DESKTOP_CORE_CONFIG[system].label}.`);
+  }
+  emulatorHost.appendChild(iframe);
   desktopRuntime.iframe = iframe;
   desktopRuntime.active = true;
   uiState.awaitingStart = false;
@@ -1292,11 +1453,20 @@ async function startDesktopRuntime({ system, file, assetUrls = [] }) {
   await new Promise((resolve) => {
     iframe.addEventListener("load", resolve, { once: true });
   });
+  focusDesktopFrame();
+  refreshDesktopFramePresentation();
+  iframe.onpointerdown = focusDesktopFrame;
+  if (emulatorHost) {
+    emulatorHost.onpointerdown = () => {
+      focusDesktopFrame();
+      refreshDesktopFramePresentation();
+    };
+  }
 }
 
 function loadPendingDesktopRuntime() {
   if (!desktopRuntime.pendingLaunch) {
-    updateStatus("Carga una ROM de SNES, N64, PS1 o PSP primero.");
+    updateStatus("Carga una ROM compatible primero.");
     return;
   }
   startDesktopRuntime(desktopRuntime.pendingLaunch)
@@ -1323,7 +1493,7 @@ function powerOffEmulatorJsSystem() {
 window.cout = function (message) {
   console.log("[EMU]", message);
   if (typeof message === "string" && message.includes("Illegal op code") && uiState.currentSystem === "gbc") {
-    updateStatus("ROM incompatible con el core actual. Usa .gb/.gbc o cambia a una ROM GBA.");
+    updateStatus("ROM incompatible con el core GB/GBC configurado en EmulatorJS.");
   }
 };
 
@@ -1400,43 +1570,23 @@ function persistPrefs() {
 }
 
 function isGbcReady() {
-  return typeof window.gameboy === "object" && window.gameboy !== null;
+  return desktopRuntime.active && desktopRuntime.currentSystem === "gbc";
 }
 
 function isGbaReady() {
-  return typeof gbaCore === "object" && gbaCore !== null && gbaCore.hasRom();
+  return desktopRuntime.active && desktopRuntime.currentSystem === "gba";
 }
 
 function isDsReady() {
-  return typeof window.WebMelon === "object" && window.WebMelon.emulator.hasEmulator();
+  return desktopRuntime.active && desktopRuntime.currentSystem === "ds";
 }
 
 function isReady() {
-  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
-  if (uiState.currentSystem === "gba") return isGbaReady();
-  if (uiState.currentSystem === "ds") return isDsReady();
-  return isGbcReady();
+  return EMULATORJS_SYSTEMS.has(uiState.currentSystem) && desktopRuntime.active;
 }
 
 function isPlaying() {
-  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) return desktopRuntime.active;
-  if (uiState.currentSystem === "gba") {
-    return isGbaReady() && !gbaCore.paused;
-  }
-  if (uiState.currentSystem === "ds") {
-    return isDsReady() && uiState.dsStarted && !uiState.dsPaused;
-  }
-  return isGbcReady() && (window.gameboy.stopEmulator & 2) === 0;
-}
-
-function binaryStringFromArrayBuffer(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let result = "";
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    result += String.fromCharCode.apply(null, bytes.subarray(offset, offset + chunkSize));
-  }
-  return result;
+  return EMULATORJS_SYSTEMS.has(uiState.currentSystem) && desktopRuntime.active;
 }
 
 function bytesToBase64(bytes) {
@@ -1674,9 +1824,6 @@ function setCurrentSystem(system) {
     bindDynamicElements();
   }
   syncCanvasResolution(system);
-  if (gbaCore && elements.canvas) {
-    gbaCore.setCanvas(elements.canvas);
-  }
 }
 
 function ensureShellElements(system = uiState.currentSystem) {
@@ -2331,15 +2478,6 @@ function currentCloudGameId() {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem) && desktopRuntime.savePath) {
     return sanitizeCloudKey(desktopRuntime.savePath.replace(/^\/+/, "").replace(/\.[^.]+$/i, ""));
   }
-  if (uiState.currentSystem === "ds" && dsSavePath) {
-    return sanitizeCloudKey(dsSavePath.replace(/^\/savefiles\//, "").replace(/\.sav$/i, ""));
-  }
-  if (uiState.currentSystem === "gba" && isGbaReady() && gbaCore?.mmu?.cart?.code) {
-    return sanitizeCloudKey(gbaCore.mmu.cart.code);
-  }
-  if (uiState.currentSystem === "gbc" && isGbcReady() && window.gameboy?.name) {
-    return sanitizeCloudKey(window.gameboy.name);
-  }
   return sanitizeCloudKey(uiState.loadedRom?.name || `${uiState.currentSystem}-save`);
 }
 
@@ -2358,61 +2496,11 @@ function buildCloudRecord(payload) {
   };
 }
 
-function currentDsSavePayload() {
-  if (!isDsReady()) {
-    throw new Error("Carga primero una ROM DS.");
-  }
-  if (!dsSavePath) {
-    throw new Error("Todavia no hay ruta de save DS activa.");
-  }
-  if (!window.FS?.analyzePath(dsSavePath).exists) {
-    throw new Error("La partida DS aun no genero un save en /savefiles.");
-  }
-  const raw = window.FS.readFile(dsSavePath);
-  return {
-    type: "ds-savefile",
-    system: uiState.currentSystem,
-    rom: uiState.loadedRom,
-    path: dsSavePath,
-    payload: bytesToBase64(raw),
-  };
-}
-
 async function currentSavePayload() {
   if (!isReady()) {
     throw new Error("No hay emulacion activa para exportar.");
   }
-
-  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    return (await exportDesktopSavePayload()).payload;
-  }
-
-  if (uiState.currentSystem === "ds") {
-    return currentDsSavePayload();
-  }
-
-  if (uiState.currentSystem === "gba") {
-    if (!gbaCore.mmu.save) {
-      throw new Error("La ROM GBA aun no genero SRAM.");
-    }
-    gbaCore.storeSavedata();
-    const storageKey = `${gbaCore.SYS_ID}.${gbaCore.mmu.cart.code}`;
-    return {
-      type: "gba-sram",
-      system: uiState.currentSystem,
-      rom: uiState.loadedRom,
-      payload: window.localStorage.getItem(storageKey),
-    };
-  }
-
-  const keyName = gbcSaveSlotName("export");
-  window.saveState(keyName);
-  return {
-    type: "gbc-state",
-    system: uiState.currentSystem,
-    rom: uiState.loadedRom,
-    payload: window.localStorage.getItem(keyName),
-  };
+  return (await exportDesktopSavePayload()).payload;
 }
 
 function downloadJsonFile(filename, payload) {
@@ -2442,38 +2530,10 @@ async function applyImportedSaveData(data) {
   if (data.system !== uiState.currentSystem) {
     throw new Error("El save importado no coincide con el sistema activo.");
   }
-  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    await importDesktopSavePayload(data);
-    updateStatus(`Save ${systemDisplayName(uiState.currentSystem)} importado correctamente.`);
-    renderStatePanel();
-    markSaveSyncState("local", `Save ${systemDisplayName(uiState.currentSystem)} restaurado en el core`);
-    return;
-  }
-  if (uiState.currentSystem === "ds") {
-    if (!isDsReady()) throw new Error("Carga primero una ROM DS.");
-    if (!dsSavePath) throw new Error("Todavia no hay ruta de save DS activa.");
-    const bytes = base64ToBytes(data.payload);
-    window.FS.writeFile(dsSavePath, bytes);
-    if (window.WebMelon?.storage?.sync) {
-      window.WebMelon.storage.sync();
-    }
-    updateStatus("Save DS importado correctamente.");
-    renderStatePanel();
-    return;
-  }
-  if (uiState.currentSystem === "gba") {
-    if (!isGbaReady()) throw new Error("Carga primero una ROM GBA.");
-    gbaCore.decodeSavedata(data.payload);
-  } else {
-    if (!isGbcReady()) throw new Error("Carga primero una ROM GB/GBC.");
-    const keyName = gbcSaveSlotName("import");
-    window.localStorage.setItem(keyName, data.payload);
-    window.openState(keyName, elements.canvas);
-    setVolume(uiState.volume);
-    applySpeed();
-  }
-  updateStatus("Save importado correctamente.");
+  await importDesktopSavePayload(data);
+  updateStatus(`Save ${systemDisplayName(uiState.currentSystem)} importado correctamente.`);
   renderStatePanel();
+  markSaveSyncState("local", `Save ${systemDisplayName(uiState.currentSystem)} restaurado en el core`);
 }
 
 async function importCurrentSave(file) {
@@ -2711,71 +2771,16 @@ function setVolume(volumePercent) {
   }
   settings[0] = uiState.volume > 0;
   settings[3] = uiState.volume / 100;
-  if (isGbcReady() && window.gameboy.audioHandle) {
-    window.gameboy.audioHandle.changeVolume(settings[3]);
-  }
-  if (isGbaReady()) {
-    gbaCore.audio.masterVolume = Math.max(0, Math.pow(2, settings[3]) - 1);
-  }
   if (desktopRuntime.active) {
     sendDesktopCommand("set-volume", settings[3]);
   }
 }
 
-function applySpeed() {
-  if (isGbcReady()) {
-    window.gameboy.setSpeed(uiState.speed);
-  }
-  if (gbaCore) {
-    gbaCore.throttle = Math.max(1, Math.round(16 / uiState.speed));
-  }
-}
-
-function resumeGbcEmulator() {
-  if (!isGbcReady()) return;
-
-  if (typeof window.run === "function") {
-    window.run();
-  }
-
-  if (isPlaying()) return;
-
-  window.gameboy.stopEmulator &= 1;
-  window.gameboy.firstIteration = Date.now();
-  window.gameboy.iterations = 0;
-  window.gameboy.run();
-
-  if (!isPlaying()) return;
-
-  if (window.gbRunInterval) {
-    window.clearInterval(window.gbRunInterval);
-  }
-  const intervalMs = Array.isArray(window.settings) ? window.settings[6] : 8;
-  window.gbRunInterval = window.setInterval(() => {
-    if (!document.hidden && !document.msHidden && !document.mozHidden && !document.webkitHidden) {
-      window.gameboy.run();
-    }
-  }, intervalMs);
-}
+function applySpeed() {}
 
 function startCurrentEmulator() {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     loadPendingDesktopRuntime();
-    return;
-  }
-  if (uiState.currentSystem === "ds") {
-    if (!isDsReady()) return;
-    window.WebMelon.emulator.resume();
-    uiState.dsPaused = false;
-    return;
-  }
-  if (uiState.currentSystem === "gba") {
-    if (!isGbaReady()) return;
-    gbaCore.runStable();
-    return;
-  }
-  if (isGbcReady()) {
-    resumeGbcEmulator();
   }
 }
 
@@ -2807,26 +2812,6 @@ function togglePowerState() {
     startCurrentEmulator();
     afterInput("power_start", "Emulacion iniciada.");
     return;
-  }
-
-  if (uiState.currentSystem === "gba") {
-    if (gbaCore.paused) {
-      gbaCore.runStable();
-    } else {
-      gbaCore.pause();
-    }
-  } else if (uiState.currentSystem === "ds") {
-    if (uiState.dsPaused) {
-      window.WebMelon.emulator.resume();
-      uiState.dsPaused = false;
-    } else {
-      window.WebMelon.emulator.pause();
-      uiState.dsPaused = true;
-    }
-  } else if (isPlaying()) {
-    window.pause();
-  } else {
-    resumeGbcEmulator();
   }
 
   afterInput("power_toggle");
@@ -2898,10 +2883,10 @@ function refreshMeta() {
         ? "Modo N64 activo. El core web vive dentro de la pantalla central para mantener el layout limpio y sin mezclarlo con carcasas portatiles."
         : "Modo PS1 activo. Usa EmulatorJS y requiere BIOS local de sesion antes de arrancar la ROM."
     : isDs
-    ? "Modo Nintendo DS activo. Se usan dos pantallas y savefiles del cartucho via WebMelon."
+    ? "Modo Nintendo DS activo. El diseño de la consola se mantiene y ahora corre sobre EmulatorJS."
     : isGba
-    ? "Modo Advance activo. La pantalla usa proporcion GBA, los hombros L/R quedan activos y los slots guardan SRAM del juego."
-    : "Modo Game Boy o Game Boy Color activo. Los slots guardan save states completos del emulador para volver exactamente al mismo punto.";
+    ? "Modo Advance activo. La carcasa se mantiene intacta y el core ahora corre sobre EmulatorJS."
+    : "Modo Game Boy o Game Boy Color activo. La carcasa actual se conserva y ahora usa EmulatorJS.";
   elements.controlProfile.textContent = isPsp
     ? "Perfil PSP"
     : isDesktop
@@ -2912,7 +2897,7 @@ function refreshMeta() {
     : isDesktop
     ? "Sin botones fisicos en pantalla. Este layout prioriza la vista del display, ideal para consolas de sobremesa."
     : isDs
-    ? "Flechas o remapeo para DS. La pantalla inferior acepta toque directo con mouse o touch."
+    ? "Flechas o remapeo para DS. El mockup sigue igual y el input se manda al core web."
     : isGba
     ? "Flechas, Z, X, Enter, Backspace y hombros L/R con A y S."
     : "Flechas, Z, X, Enter y Backspace para la cruceta y botones clasicos.";
@@ -2934,8 +2919,8 @@ function refreshMeta() {
   elements.exportSaveBtn.disabled = false;
   elements.drawerImportSaveBtn.disabled = false;
   elements.drawerExportSaveBtn.disabled = false;
-  elements.touchControlsToggle.disabled = isEmulatorJs;
-  elements.speedBtn.disabled = isEmulatorJs;
+  elements.touchControlsToggle.disabled = isDesktop || isPsp;
+  elements.speedBtn.disabled = isDesktop || isPsp;
   if (elements.consolePowerBtn) {
     elements.consolePowerBtn.classList.toggle("ready", uiState.awaitingStart);
     elements.consolePowerBtn.classList.toggle("active", isPlaying());
@@ -2973,6 +2958,12 @@ function setFocusMode(nextFocus) {
     document.exitFullscreen().catch((err) => console.log(err));
   }
   persistAndRender();
+  if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
+    window.setTimeout(() => {
+      focusDesktopFrame();
+      refreshDesktopFramePresentation();
+    }, 60);
+  }
 }
 
 function toggleOverlayVisibility() {
@@ -2992,52 +2983,16 @@ function renderStatePanel() {
 
 function persistAndRender() {
   persistPrefs();
-  if (uiState.currentSystem === "ds" && typeof window.WebMelon === "object") {
-    applyDsInputSettings();
-  }
   applyVisualPrefs();
   renderStatePanel();
   renderLibrary();
   updateStatus();
 }
 
-function gbaButtonIndex(button) {
-  const map = {
-    a: "A",
-    b: "B",
-    select: "SELECT",
-    start: "START",
-    right: "RIGHT",
-    left: "LEFT",
-    up: "UP",
-    down: "DOWN",
-    r: "R",
-    l: "L",
-  };
-  return gbaCore && gbaCore.keypad ? gbaCore.keypad[map[button]] : null;
-}
-
 function pressInput(button) {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     if (!desktopRuntime.active) return;
     dispatchEmulatorJsKey(button, "keydown");
-    return;
-  }
-  if (uiState.currentSystem === "ds") {
-    const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
-    if (!key) return;
-    window.dispatchEvent(new KeyboardEvent("keydown", { key }));
-    return;
-  }
-  if (uiState.currentSystem === "gba") {
-    if (!isGbaReady()) return;
-    const index = gbaButtonIndex(button);
-    if (typeof index !== "number") return;
-    gbaCore.keypad.currentDown &= ~(1 << index);
-    return;
-  }
-  if (isGbcReady()) {
-    window.GameBoyKeyDown(button);
   }
 }
 
@@ -3045,23 +3000,6 @@ function releaseInput(button) {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     if (!desktopRuntime.active) return;
     dispatchEmulatorJsKey(button, "keyup");
-    return;
-  }
-  if (uiState.currentSystem === "ds") {
-    const key = Object.keys(uiState.keyBindings).find((candidate) => uiState.keyBindings[candidate] === button);
-    if (!key) return;
-    window.dispatchEvent(new KeyboardEvent("keyup", { key }));
-    return;
-  }
-  if (uiState.currentSystem === "gba") {
-    if (!isGbaReady()) return;
-    const index = gbaButtonIndex(button);
-    if (typeof index !== "number") return;
-    gbaCore.keypad.currentDown |= 1 << index;
-    return;
-  }
-  if (isGbcReady()) {
-    window.GameBoyKeyUp(button);
   }
 }
 
@@ -3215,195 +3153,9 @@ function bindPspAnalogStick() {
   });
 }
 
-function gbcSaveSlotName(slot) {
-  const romName = isGbcReady() && window.gameboy.name ? window.gameboy.name : "rom";
-  return `${GBC_SAVE_PREFIX}${romName}_slot_${slot}`;
-}
-
-function gbaSaveSlotName(slot) {
-  const romCode = isGbaReady() && gbaCore.mmu && gbaCore.mmu.cart ? gbaCore.mmu.cart.code : "gba";
-  return `${GBA_SAVE_PREFIX}${romCode}_slot_${slot}`;
-}
-
 function teardownCurrentEmulator() {
   teardownDesktopRuntime();
   desktopRuntime.pendingLaunch = null;
-  dsSavePath = "";
-  if (isDsReady()) {
-    try {
-      window.WebMelon.emulator.shutdown();
-    } catch (error) {
-      console.warn("No se pudo detener DS", error);
-    }
-    uiState.dsStarted = false;
-    uiState.dsPaused = false;
-  }
-  if (isGbaReady()) {
-    gbaCore.pause();
-  }
-  if (isGbcReady()) {
-    try {
-      window.clearLastEmulation();
-    } catch (error) {
-      console.warn("No se pudo detener GBC", error);
-    }
-  }
-}
-
-async function ensureGbaCore() {
-  if (!gbaCore) {
-    gbaCore = new GameBoyAdvance();
-    gbaCore.keypad.eatInput = true;
-    gbaCore.logLevel = gbaCore.LOG_ERROR;
-    gbaCore.setLogger(function (_level, error) {
-      console.error("[GBA]", error);
-      updateStatus(`Error en core GBA: ${error}`);
-      gbaCore.pause();
-    });
-  }
-
-  gbaCore.setCanvas(elements.canvas);
-
-  if (!gbaBiosBuffer) {
-    const response = await fetch(GBA_BIOS_URL);
-    gbaBiosBuffer = await response.arrayBuffer();
-  }
-
-  gbaCore.setBios(gbaBiosBuffer);
-  return gbaCore;
-}
-
-function applyDsInputSettings() {
-  if (!window.WebMelon) return;
-  const settings = window.WebMelon.input.getInputSettings();
-  const nextKeybinds = {};
-  const dsButtonMap = {
-    up: "DPAD_UP",
-    down: "DPAD_DOWN",
-    left: "DPAD_LEFT",
-    right: "DPAD_RIGHT",
-    a: "A",
-    b: "B",
-    x: "X",
-    y: "Y",
-    start: "START",
-    select: "SELECT",
-    l: "L",
-    r: "R",
-  };
-  Object.entries(uiState.keyBindings).forEach(([key, action]) => {
-    const dsButtonName = dsButtonMap[action];
-    if (!dsButtonName) return;
-    nextKeybinds[key] = window.WebMelon.constants.DS_INPUT_MAP[dsButtonName];
-  });
-  settings.keybinds = nextKeybinds;
-  window.WebMelon.input.setInputSettings(settings);
-}
-
-function ensureDsRuntime() {
-  if (!window.WebMelon) {
-    throw new Error("WebMelon DS no cargo en esta pagina. Revisa que Vercel este sirviendo webmelon.js y wasmemulator.js.");
-  }
-  if (!window.WebMelon.assembly || typeof window.WebMelon.assembly.addLoadListener !== "function") {
-    throw new Error("WebMelon DS no pudo inicializarse en este deploy. Revisa headers COOP/COEP, la ruta de wasmemulator.wasm y /app-config.js en Vercel.");
-  }
-  if (dsReadyPromise) {
-    return dsReadyPromise;
-  }
-  dsReadyPromise = new Promise((resolve) => {
-    window.WebMelon.assembly.addLoadListener(() => {
-      applyDsInputSettings();
-      resolve(window.WebMelon);
-    });
-  });
-  return dsReadyPromise;
-}
-
-async function loadGbcRom(file) {
-  setCurrentSystem("gbc");
-  const buffer = await file.arrayBuffer();
-  const binary = binaryStringFromArrayBuffer(buffer);
-  window.start(elements.canvas, binary);
-  uiState.loadedRom = {
-    name: file.name,
-    size: buffer.byteLength,
-  };
-  uiState.lastInput = "rom_loaded";
-  uiState.paused = false;
-  setVolume(uiState.volume);
-  applySpeed();
-  uiState.awaitingStart = false;
-  resumeGbcEmulator();
-  updateStatus("Core GB/GBC inicializado.");
-  renderStatePanel();
-}
-
-async function loadGbaRom(file) {
-  setCurrentSystem("gba");
-  const core = await ensureGbaCore();
-  const buffer = await file.arrayBuffer();
-  const result = core.setRom(buffer);
-  if (!result) {
-    throw new Error("No se pudo iniciar la ROM GBA.");
-  }
-  uiState.loadedRom = {
-    name: file.name,
-    size: buffer.byteLength,
-  };
-  uiState.lastInput = "rom_loaded";
-  uiState.paused = false;
-  setVolume(uiState.volume);
-  applySpeed();
-  uiState.awaitingStart = false;
-  core.runStable();
-  updateStatus("Core GBA inicializado.");
-  renderStatePanel();
-}
-
-async function loadDsRom(file) {
-  setCurrentSystem("ds");
-  const ds = await ensureDsRuntime();
-  const romData = new Uint8Array(await file.arrayBuffer());
-
-  ds.cart.createCart();
-  ds.storage.createDirectory("/roms");
-  ds.storage.write("/roms/game.nds", romData);
-  ds.emulator.createEmulator();
-  if (!ds.cart.loadFileIntoCart("/roms/game.nds")) {
-    throw new Error("No se pudo cargar la ROM DS.");
-  }
-
-  await new Promise((resolve) => {
-    ds.storage.onPrepare(() => {
-      const gameCode = ds.cart.getUnloadedCartCode();
-      ds.emulator.setSavePath(`/savefiles/${gameCode}.sav`);
-      ds.emulator.loadFreeBIOS();
-      ds.emulator.loadCart();
-      ds.emulator.startEmulation("ds-top-screen", "ds-bottom-screen");
-      uiState.dsStarted = true;
-      uiState.dsPaused = false;
-      resolve(null);
-    });
-    ds.storage.prepareVirtualFilesystem();
-  });
-  dsSavePath = `/savefiles/${ds.cart.getUnloadedCartCode()}.sav`;
-  if (typeof ds.storage.onSaveComplete === "function") {
-    ds.storage.onSaveComplete(() => {
-      markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save DS pendiente de sincronizar" : "Save DS guardado localmente");
-      if (cloudState.client && cloudState.user && cloudSaveSupported("ds")) {
-        syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar DS: ${error.message}`));
-      }
-    });
-  }
-  uiState.loadedRom = {
-    name: file.name,
-    size: romData.byteLength,
-  };
-  uiState.lastInput = "rom_loaded";
-  uiState.awaitingStart = false;
-  applyDsInputSettings();
-  updateStatus("Core DS inicializado.");
-  renderStatePanel();
 }
 
 async function loadDesktopRom(file, system, meta = {}) {
@@ -3446,19 +3198,13 @@ async function loadRom(fileList) {
     persistAndRender();
     updateStatus(`La ROM cambio el sistema a ${target.system.toUpperCase()} automaticamente.`);
   }
-  if (target.system === "gba") {
-    await loadGbaRom(primaryFile);
-  } else if (target.system === "ds") {
-    await loadDsRom(primaryFile);
-  } else if (EMULATORJS_SYSTEMS.has(target.system)) {
+  if (EMULATORJS_SYSTEMS.has(target.system)) {
     if (target.system === "ps1" && getFileExtension(primaryFile.name) === "cue") {
       const bundledCue = await buildPs1CueBundle(files);
       await loadDesktopRom(bundledCue.launchFile, target.system, bundledCue);
     } else {
       await loadDesktopRom(primaryFile, target.system);
     }
-  } else {
-    await loadGbcRom(primaryFile);
   }
   recordLibraryEntry(primaryFile, target.system);
   persistPrefs();
@@ -3473,101 +3219,21 @@ async function loadRom(fileList) {
 
 function saveToSlot(slot) {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    updateStatus("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
+    updateStatus(`${systemDisplayName(uiState.currentSystem)} usa el gestor interno de EmulatorJS para saves.`);
     return;
   }
-  if (!isReady()) {
-    updateStatus("No hay emulacion activa para guardar.");
-    return;
-  }
-
-  if (uiState.currentSystem === "gba") {
-    if (!gbaCore.mmu.save) {
-      updateStatus("GBA aun no genero datos de guardado internos.");
-      return;
-    }
-    gbaCore.storeSavedata();
-    const storageKey = `${gbaCore.SYS_ID}.${gbaCore.mmu.cart.code}`;
-    const savedata = window.localStorage.getItem(storageKey);
-    if (!savedata) {
-      updateStatus("No se pudo capturar el guardado SRAM de GBA.");
-      return;
-    }
-    window.localStorage.setItem(gbaSaveSlotName(slot), savedata);
-    markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save GBA pendiente de sincronizar" : "Save GBA guardado localmente");
-    if (cloudState.client && cloudState.user && cloudSaveSupported()) {
-      syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
-    }
-    afterInput(`save_slot_${slot}`, `SRAM de GBA guardado en slot ${slot}. Guarda progreso del juego, no un freeze state.`);
-    return;
-  }
-
-  if (uiState.currentSystem === "ds") {
-    updateStatus("DS usa savefiles internos. Usa Importar/Exportar save.");
-    return;
-  }
-
-  window.saveState(gbcSaveSlotName(slot));
-  markSaveSyncState(cloudState.user ? "pending" : "local", cloudState.user ? "Save GB/GBC pendiente de sincronizar" : "Save GB/GBC guardado localmente");
-  if (cloudState.client && cloudState.user && cloudSaveSupported()) {
-    syncCurrentSaveToCloud().catch((error) => setCloudStatus("error", `No pude sincronizar: ${error.message}`));
-  }
-  afterInput(`save_slot_${slot}`, `Save state guardado en slot ${slot}.`);
 }
 
 function loadFromSlot(slot) {
   if (EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
-    updateStatus("SNES, N64, PS1 y PSP usan el gestor interno del core web para saves.");
+    updateStatus(`${systemDisplayName(uiState.currentSystem)} usa el gestor interno de EmulatorJS para saves.`);
     return;
   }
-  if (!isReady()) {
-    updateStatus("No hay emulacion activa.");
-    return;
-  }
-
-  if (uiState.currentSystem === "gba") {
-    const savedata = window.localStorage.getItem(gbaSaveSlotName(slot));
-    if (!savedata) {
-      updateStatus(`No existe SRAM GBA en el slot ${slot}.`);
-      return;
-    }
-    gbaCore.decodeSavedata(savedata);
-    afterInput(`load_slot_${slot}`, `SRAM de GBA cargado desde slot ${slot}.`);
-    return;
-  }
-
-  if (uiState.currentSystem === "ds") {
-    updateStatus("DS usa savefiles internos. Usa Importar/Exportar save.");
-    return;
-  }
-
-  const keyName = gbcSaveSlotName(slot);
-  if (!window.findValue(keyName)) {
-    updateStatus(`No existe un save en el slot ${slot}.`);
-    return;
-  }
-  window.openState(keyName, elements.canvas);
-  setVolume(uiState.volume);
-  applySpeed();
-  afterInput(`load_slot_${slot}`, `Save state cargado desde slot ${slot}.`);
 }
 
 function applyCheats() {
-  if (!isReady()) {
+  if (!isReady() || EMULATORJS_SYSTEMS.has(uiState.currentSystem)) {
     return;
-  }
-
-  for (const cheat of uiState.cheats) {
-    if (!cheat.enabled) continue;
-    try {
-      if (uiState.currentSystem === "gba") {
-        gbaCore.mmu.store8(cheat.address >>> 0, cheat.value);
-      } else {
-        window.gameboy.memoryWrite(cheat.address, cheat.value);
-      }
-    } catch (error) {
-      console.warn("No se pudo aplicar cheat", cheat, error);
-    }
   }
 }
 
@@ -3602,42 +3268,17 @@ function setDefaults() {
 window.render_game_to_text = function () {
   const system = uiState.currentSystem;
   const core =
-    system === "ds" && isDsReady()
+    EMULATORJS_SYSTEMS.has(system)
       ? {
-          title: window.WebMelon.emulator.getGameTitle(),
-          started: uiState.dsStarted,
-          paused: uiState.dsPaused,
-          canvas: {
-            top: { width: elements.dsTopCanvas.width, height: elements.dsTopCanvas.height },
-            bottom: { width: elements.dsBottomCanvas.width, height: elements.dsBottomCanvas.height },
-          },
+          active: desktopRuntime.active,
+          family: system === "psp" || !DESKTOP_SYSTEMS.has(system) ? "handheld" : "desktop",
+          requiresBios: desktopNeedsBios(system),
+          biosLoaded: hasDesktopBios(system),
+          savePath: desktopRuntime.savePath,
+          canvas: elements.canvas ? { width: elements.canvas.width, height: elements.canvas.height } : null,
+          dsHostMounted: system === "ds" ? Boolean(document.querySelector("#ds-emulator-host")) : false,
         }
-      : system === "gba" && isGbaReady()
-      ? {
-          title: gbaCore.mmu.cart.title,
-          code: gbaCore.mmu.cart.code,
-          paused: gbaCore.paused,
-          hasSave: !!gbaCore.mmu.save,
-          canvas: { width: elements.canvas.width, height: elements.canvas.height },
-        }
-      : EMULATORJS_SYSTEMS.has(system)
-        ? {
-            active: desktopRuntime.active,
-            family: system === "psp" ? "handheld" : "desktop",
-            requiresBios: desktopNeedsBios(system),
-            biosLoaded: hasDesktopBios(system),
-            canvas: elements.canvas ? { width: elements.canvas.width, height: elements.canvas.height } : null,
-          }
-      : isGbcReady()
-        ? {
-            name: window.gameboy.name,
-            cGBC: window.gameboy.cGBC,
-            usedBootROM: window.gameboy.usedBootROM,
-            stopEmulator: window.gameboy.stopEmulator,
-            audioInitialized: !!window.gameboy.audioHandle,
-            canvas: { width: elements.canvas.width, height: elements.canvas.height },
-          }
-        : null;
+      : null;
 
   return JSON.stringify(
     {
@@ -3685,19 +3326,10 @@ window.advanceTime = function (ms) {
     }, ms);
     return;
   }
-  if (uiState.currentSystem === "gba") {
-    const frames = Math.max(1, Math.round(ms / 16));
-    for (let index = 0; index < frames; index += 1) {
-      gbaCore.advanceFrame();
-    }
-  } else {
-    const iterations = Math.max(1, Math.round(ms / 16));
-    for (let index = 0; index < iterations; index += 1) {
-      window.gameboy.run();
-    }
-  }
-  applyCheats();
-  renderStatePanel();
+  window.setTimeout(() => {
+    applyCheats();
+    renderStatePanel();
+  }, ms);
 };
 
 function bindInputButton(buttonElement) {
@@ -4242,7 +3874,8 @@ window.addEventListener("message", (event) => {
   if (event.data.type === "desktop-frame-ready") {
     if (!desktopRuntime.iframe || event.data.system !== uiState.currentSystem) return;
     sendDesktopCommand("set-volume", uiState.volume / 100);
-    desktopRuntime.iframe.focus();
+    focusDesktopFrame();
+    refreshDesktopFramePresentation();
     return;
   }
   if (event.data.type === "desktop-save-ready") {
