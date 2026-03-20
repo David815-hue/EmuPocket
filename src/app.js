@@ -66,7 +66,8 @@ const defaultKeyBindings = {
 
 const defaultPrefs = {
   systemPreference: "auto",
-  drawerOpen: false,
+  drawerOpen: true,
+  libraryPanelOpen: true,
   focusMode: false,
   overlayVisible: false,
   overlayContext: "battle-root",
@@ -709,6 +710,8 @@ function refreshElements() {
   elements.libraryGrid = document.querySelector("#library-grid");
   elements.libraryViewButtons = [...document.querySelectorAll("[data-library-view]")];
   elements.libraryPanel = document.querySelector("#library-panel");
+  elements.librarySidebar = document.querySelector("#library-sidebar");
+  elements.libraryCloseBtn = document.querySelector("#library-close-btn");
   elements.stateOutput = document.querySelector("#state-output");
   elements.menuOverlay = document.querySelector("#menu-overlay");
   elements.toggleMenuBtn = document.querySelector("#toggle-menu-btn");
@@ -719,6 +722,8 @@ function refreshElements() {
   elements.drawer = document.querySelector("#control-drawer");
   elements.quickMenuBtn = document.querySelector("#quick-menu-btn");
   elements.openLibraryBtn = document.querySelector("#open-library-btn");
+  elements.libraryNavBtn = document.querySelector("#library-nav-btn");
+  elements.systemNavBtn = document.querySelector("#system-nav-btn");
   elements.quickSaveBtn = document.querySelector("#quick-save-btn");
   elements.quickLoadBtn = document.querySelector("#quick-load-btn");
   elements.powerBtn = document.querySelector("#power-btn");
@@ -1794,6 +1799,9 @@ function loadPrefs() {
     if (!Array.isArray(uiState.cheats)) {
       uiState.cheats = [];
     }
+    if (typeof stored.libraryPanelOpen !== "boolean") {
+      uiState.libraryPanelOpen = defaultPrefs.libraryPanelOpen;
+    }
     uiState.keyBindings = { ...defaultKeyBindings, ...(stored.keyBindings || {}) };
   } catch (error) {
     console.warn("No se pudieron restaurar preferencias", error);
@@ -1804,6 +1812,7 @@ function persistPrefs() {
   const payload = {
     systemPreference: uiState.systemPreference,
     drawerOpen: uiState.drawerOpen,
+    libraryPanelOpen: uiState.libraryPanelOpen,
     focusMode: uiState.focusMode,
     overlayVisible: uiState.overlayVisible,
     overlayContext: uiState.overlayContext,
@@ -2953,6 +2962,7 @@ function applyVisualPrefs() {
   elements.body.dataset.system = uiState.currentSystem;
   elements.body.dataset.filter = uiState.filterMode;
   elements.body.classList.toggle("drawer-open", uiState.drawerOpen);
+  elements.body.classList.toggle("library-open", uiState.libraryPanelOpen);
   elements.body.classList.toggle("focus-mode", uiState.focusMode && uiState.currentSystem !== "ds");
   elements.body.classList.toggle("touch-visible", uiState.touchControls && hasTouchSurface);
   elements.body.style.setProperty("--filter-intensity", String(uiState.filterIntensity / 100));
@@ -2978,7 +2988,23 @@ function applyVisualPrefs() {
   }
   if (elements.drawerToggleBtn) {
     elements.drawerToggleBtn.setAttribute("aria-expanded", String(uiState.drawerOpen));
-    elements.drawerToggleBtn.textContent = uiState.drawerOpen ? "Cerrar menu" : "Menu";
+    elements.drawerToggleBtn.setAttribute("aria-pressed", String(uiState.drawerOpen));
+    elements.drawerToggleBtn.textContent = uiState.drawerOpen ? "Ocultar sistema" : "Mostrar sistema";
+  }
+  if (elements.librarySidebar) {
+    elements.librarySidebar.setAttribute("aria-hidden", String(!uiState.libraryPanelOpen));
+  }
+  if (elements.openLibraryBtn) {
+    elements.openLibraryBtn.setAttribute("aria-pressed", String(uiState.libraryPanelOpen));
+    elements.openLibraryBtn.textContent = uiState.libraryPanelOpen ? "Ocultar biblioteca" : "Mostrar biblioteca";
+  }
+  if (elements.libraryNavBtn) {
+    elements.libraryNavBtn.setAttribute("aria-pressed", String(uiState.libraryPanelOpen));
+    elements.libraryNavBtn.classList.toggle("archive-nav-link--active", uiState.libraryPanelOpen);
+  }
+  if (elements.systemNavBtn) {
+    elements.systemNavBtn.setAttribute("aria-pressed", String(uiState.drawerOpen));
+    elements.systemNavBtn.classList.toggle("archive-nav-link--active", uiState.drawerOpen);
   }
   if (elements.focusModeBtn) {
     elements.focusModeBtn.textContent = uiState.focusMode ? "Salir enfoque" : "Modo enfoque";
@@ -3199,6 +3225,11 @@ function refreshMeta() {
 
 function setDrawerOpen(nextOpen) {
   uiState.drawerOpen = nextOpen;
+  persistAndRender();
+}
+
+function setLibraryPanelOpen(nextOpen) {
+  uiState.libraryPanelOpen = nextOpen;
   persistAndRender();
 }
 
@@ -3857,11 +3888,28 @@ elements.drawerToggleBtn.addEventListener("click", () => {
   setDrawerOpen(!uiState.drawerOpen);
 });
 
+elements.systemNavBtn?.addEventListener("click", () => {
+  setDrawerOpen(!uiState.drawerOpen);
+});
+
 elements.openLibraryBtn?.addEventListener("click", () => {
-  setDrawerOpen(true);
-  window.requestAnimationFrame(() => {
-    elements.libraryPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+  const willOpen = !uiState.libraryPanelOpen;
+  setLibraryPanelOpen(willOpen);
+  if (willOpen) {
+    window.requestAnimationFrame(() => {
+      elements.libraryPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+});
+
+elements.libraryNavBtn?.addEventListener("click", () => {
+  const willOpen = !uiState.libraryPanelOpen;
+  setLibraryPanelOpen(willOpen);
+  if (willOpen) {
+    window.requestAnimationFrame(() => {
+      elements.libraryPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 });
 
 elements.quickMenuBtn.addEventListener("click", () => {
@@ -3871,6 +3919,10 @@ elements.quickMenuBtn.addEventListener("click", () => {
 
 elements.drawerCloseBtn.addEventListener("click", () => {
   setDrawerOpen(false);
+});
+
+elements.libraryCloseBtn?.addEventListener("click", () => {
+  setLibraryPanelOpen(false);
 });
 
 elements.drawerBackdrop.addEventListener("click", () => {

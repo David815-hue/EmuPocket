@@ -10,22 +10,38 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,700;6..72,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css?v=20260318-gba-screen-fit-fix" />
     <link rel="stylesheet" href="./mockups-main.css?v=20260318-gba-screen-fit-fix" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   </head>
-  <body data-theme="teal" data-system="gbc">
+  <body class="archive-stitch-body bg-surface text-ink font-body selection:bg-[#c8eadd] selection:text-[#012018]" data-theme="teal" data-system="gbc">
     <main class="shell">
-      <header class="app-header">
-        <div class="app-copy">
-          <p class="eyebrow">Virtual handheld</p>
-          <h1>Pocket Codex</h1>
-          <p class="intro">
-            Sube una ROM local y juega. El menu ahora vive aparte para que la consola
-            sea el foco principal.
-          </p>
-          <p id="status-line" class="status-line">Esperando una ROM local.</p>
+      <header class="app-header bg-surface border-b border-line">
+        <div class="archive-header-bar">
+          <div class="archive-brand">ARCHIVE_OS</div>
+          <div class="archive-segment-group">
+            <button type="button" class="archive-segment-btn" data-system-toggle="gbc">GB/GBC</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="gba">GBA</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="ds">DS</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="snes">SNES</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="n64">N64</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="psp">PSP</button>
+            <button type="button" class="archive-segment-btn" data-system-toggle="ps1">PS1</button>
+          </div>
+          <nav class="archive-nav">
+            <button id="library-nav-btn" type="button" class="archive-nav-link">ROMs</button>
+            <button id="system-nav-btn" type="button" class="archive-nav-secondary">Settings</button>
+            <a href="#saves-panel" class="archive-nav-secondary">Save States</a>
+            <a href="#cheats-panel" class="archive-nav-secondary">Cheats</a>
+          </nav>
+          <div class="archive-top-actions">
+            <label class="archive-top-pill bg-primary text-white" for="rom-input">Subir ROM</label>
+            <button id="focus-mode-btn" type="button" class="archive-top-pill">Modo enfoque</button>
+          </div>
+        </div>
+
+        <div class="sr-only">
           <section class="onboarding-strip" id="onboarding-strip" aria-label="Primeros pasos">
             <div class="onboarding-card" data-onboarding-step="rom">
               <strong>1. Sube ROM</strong>
@@ -40,79 +56,94 @@
               <span id="onboarding-bios-copy">Solo `PS1` pide BIOS local de sesion antes de jugar.</span>
             </div>
           </section>
-        </div>
-
-        <div class="topbar">
-          <div class="quick-actions" aria-label="Acciones rapidas">
-            <label class="upload-btn" for="rom-input">Subir ROM</label>
-            <input id="rom-input" type="file" multiple accept=".gb,.gbc,.gba,.nds,.smc,.sfc,.fig,.bs,.z64,.n64,.v64,.bin,.img,.pbp,.cue,.chd,.iso,.cso,.elf" />
-            <button id="power-btn" type="button">Pausar</button>
-            <button id="speed-btn" type="button">Velocidad x1</button>
-            <button id="fullscreen-btn" type="button">Pantalla completa</button>
-            <button id="focus-mode-btn" type="button">Modo enfoque</button>
-            <!-- Hidden original toggle (kept for JS event binding, not visible) -->
-            <div class="system-toggle" id="system-toggle" role="group" aria-label="Selector de sistema" style="display:none !important">
-              <button type="button" class="system-toggle-btn" data-system-toggle="auto" style="border-radius:0;">Auto</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="gbc" style="border-radius:0;">GB/GBC</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="gba" style="border-radius:0;">GBA</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="ds" style="border-radius:0;">DS</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="snes" style="border-radius:0;">SNES</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="n64" style="border-radius:0;">N64</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="ps1" style="border-radius:0;">PS1</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="psp" style="border-radius:0;">PSP</button>
-            </div>
-            <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">
-              Menu
-            </button>
+          <div class="system-toggle" id="system-toggle" role="group" aria-label="Selector de sistema">
+            <button type="button" class="system-toggle-btn" data-system-toggle="auto">Auto</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="snes">SNES</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="n64">N64</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="ps1">PS1</button>
+            <button type="button" class="system-toggle-btn" data-system-toggle="psp">PSP</button>
           </div>
-
-          <div class="quick-strip" aria-label="Acciones de sesion">
-            <button id="open-library-btn" type="button">Ir a biblioteca</button>
-            <label class="secondary-upload-btn" for="ps1-bios-input">BIOS PS1</label>
-            <input id="ps1-bios-input" type="file" accept=".bin,.rom,.bios" />
-            <button id="import-save-btn" type="button">Importar save</button>
-            <button id="export-save-btn" type="button">Exportar save</button>
-            <button id="reset-filter-btn" type="button">Reset visual</button>
-          </div>
+          <button id="open-library-btn" type="button">Biblioteca</button>
+          <button id="drawer-toggle-btn" type="button" aria-expanded="false" aria-controls="control-drawer">Sistema</button>
         </div>
       </header>
 
       <section class="play-layout">
-        <div class="console-zone">
+        <aside id="library-sidebar" class="library-sidebar w-80 shrink-0 overflow-y-auto border-r border-line bg-[#f6f3ee]" aria-label="Panel de biblioteca" aria-hidden="false">
+          <section class="library-panel p-6" id="library-panel">
+            <div class="archive-panel-head">
+              <div>
+                <p class="archive-kicker">COLECCION LOCAL</p>
+                <h2 class="archive-side-title">Biblioteca</h2>
+                <p class="archive-side-copy">Tus ultimas ROMs, el sistema detectado y el historial rapido viven aqui.</p>
+              </div>
+              <button id="library-close-btn" type="button" class="archive-panel-close" aria-label="Ocultar biblioteca">Ocultar</button>
+            </div>
+            <section class="library-showcase mt-6" id="library-showcase" aria-label="Biblioteca local">
+              <div class="library-toolbar" aria-label="Vista de biblioteca">
+                <div class="library-view-toggle" role="group" aria-label="Cambiar vista">
+                  <button type="button" class="library-view-btn" data-library-view="shelf">Shelf</button>
+                  <button type="button" class="library-view-btn" data-library-view="grid">Grid</button>
+                  <button type="button" class="library-view-btn" data-library-view="detail">Detail</button>
+                </div>
+              </div>
+              <article class="library-hero" id="library-hero">
+                <div class="library-hero-meta">
+                  <span class="library-pill" id="library-hero-system">Sin sistema</span>
+                  <span class="library-pill library-pill--sync" id="save-sync-chip">Solo local</span>
+                  <span class="library-pill library-pill--subtle" id="library-hero-time">Sin historial</span>
+                </div>
+              </article>
+              <div class="library-grid" id="library-grid"></div>
+            </section>
+          </section>
+        </aside>
+
+        <div class="console-zone relative flex-1 overflow-hidden bg-surface">
+          <div class="archive-console-dots"></div>
           <div class="console-stage">
-            <div class="focus-bar" id="focus-bar" hidden>
+            <div class="focus-bar mb-4 flex w-full justify-end gap-3" id="focus-bar" hidden>
               <span class="focus-chip">Enfoque activo</span>
-              <button id="focus-exit-btn" type="button">Salir enfoque</button>
+              <button id="focus-exit-btn" type="button" class="archive-top-pill">Salir enfoque</button>
             </div>
 
-            <!-- System toggle above the console -->
-            <div class="console-system-toggle" role="group" aria-label="Cambiar sistema">
-              <button type="button" class="system-toggle-btn" data-system-toggle="gbc">GB/GBC</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="gba">GBA</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="ds">DS</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="snes">SNES</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="n64">N64</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="ps1">PS1</button>
-              <button type="button" class="system-toggle-btn" data-system-toggle="psp">PSP</button>
-            </div>
-
-            <div class="console-topline" style="justify-content: center;">
-            <div class="topline-pills">
-              <div class="status-chip" id="system-chip">Sistema: GBC</div>
-              <div class="status-chip status-chip--sync" id="save-sync-chip-top">Save local</div>
-              <div id="brand-chip" style="display:none !important"></div>
-              <div id="save-mode-chip" style="display:none !important"></div>
-              <div id="overlay-summary" style="display:none !important"></div>
+            <div class="console-topline" aria-hidden="true" style="display:none !important">
+              <div class="topline-pills flex flex-wrap items-center justify-center gap-2">
+                <div class="status-chip" id="system-chip">Sistema: GBC</div>
+                <div class="status-chip status-chip--sync" id="save-sync-chip-top">Save local</div>
+                <div id="brand-chip" style="display:none !important"></div>
+                <div id="save-mode-chip" style="display:none !important"></div>
+                <div id="overlay-summary" style="display:none !important"></div>
               </div>
             </div>
 
-            <div id="console-shell-host" class="console-shell-host" aria-live="polite"></div>
+            <div class="archive-console-floatbar">
+              <button id="fullscreen-btn" type="button" class="archive-icon-pill" aria-label="Pantalla completa" title="Pantalla completa">
+                <span class="fa fa-expand" aria-hidden="true"></span>
+                <span class="sr-only">Pantalla completa</span>
+              </button>
+            </div>
 
-            <div class="console-dock">
-              <button id="toggle-menu-btn" type="button">Overlay</button>
-              <button id="quick-save-btn" type="button" data-save-slot="1">Guardar</button>
-              <button id="quick-load-btn" type="button" data-load-slot="1">Cargar</button>
-              <button id="quick-menu-btn" type="button">Ajustes</button>
+            <div class="sr-only" hidden aria-hidden="true">
+              <p id="status-line" class="archive-status-pill">Esperando una ROM local.</p>
+              <button id="power-btn" type="button">Pausar</button>
+              <button id="speed-btn" type="button">Velocidad x1</button>
+            </div>
+
+            <div class="archive-console-layout">
+              <div class="archive-console-shell w-full rounded-[36px] border border-white/70 bg-[#f0eee9] p-8 shadow-[0_20px_40px_rgba(27,28,25,0.08),inset_0_1px_0_rgba(255,255,255,0.55)]">
+                <div id="console-shell-host" class="console-shell-host" aria-live="polite"></div>
+              </div>
+            </div>
+
+            <div class="console-dock mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button id="toggle-menu-btn" type="button" class="archive-action-pill archive-action-pill--warm">Mostrar overlay</button>
+              <button id="quick-save-btn" type="button" class="archive-action-pill archive-action-pill--primary" data-save-slot="1">Guardar</button>
+              <button id="quick-load-btn" type="button" class="archive-action-pill" data-load-slot="1">Cargar</button>
+              <button id="quick-menu-btn" type="button" class="archive-action-pill">Ajustes</button>
             </div>
 
             <div class="touch-controls" id="touch-controls" aria-label="Controles tactiles">
@@ -148,17 +179,17 @@
           tabindex="-1"
         ></button>
 
-        <aside id="control-drawer" class="dashboard" aria-label="Panel de ajustes" aria-hidden="true">
-          <div class="drawer-header">
+        <aside id="control-drawer" class="dashboard w-[22rem] shrink-0 overflow-y-auto border-l border-line bg-surface-panel p-6" aria-label="Panel de sistema y ajustes" aria-hidden="true">
+          <div class="drawer-header mb-5 flex items-start justify-between gap-4">
             <div>
-              <p class="eyebrow">Controles</p>
-              <h2>Menu rapido</h2>
+              <p class="archive-kicker">CONTROL CENTER</p>
+              <h2 class="archive-side-title">System</h2>
             </div>
-            <button id="drawer-close-btn" type="button" class="drawer-close" aria-label="Cerrar menu">Cerrar</button>
+            <button id="drawer-close-btn" type="button" class="archive-panel-close" aria-label="Ocultar panel de sistema">Ocultar</button>
           </div>
 
-          <section class="panel-block system-panel">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card system-panel">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Sistema activo</h2>
               <span class="mini-badge" id="system-badge">gbc</span>
             </div>
@@ -177,8 +208,24 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
+              <h2>Sesion</h2>
+              <span class="mini-badge">acciones</span>
+            </div>
+            <div class="panel-actions">
+              <label class="upload-btn compact-upload" for="rom-input">Subir ROM</label>
+              <label class="secondary-upload-btn" for="ps1-bios-input">BIOS PS1</label>
+              <input id="rom-input" type="file" multiple accept=".gb,.gbc,.gba,.nds,.smc,.sfc,.fig,.bs,.z64,.n64,.v64,.bin,.img,.pbp,.cue,.chd,.iso,.cso,.elf" />
+              <input id="ps1-bios-input" type="file" accept=".bin,.rom,.bios" />
+              <button id="import-save-btn" type="button">Importar save</button>
+              <button id="export-save-btn" type="button">Exportar save</button>
+              <button id="reset-filter-btn" type="button">Reset visual</button>
+            </div>
+          </section>
+
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Overlay tactico</h2>
               <span class="mini-badge" id="context-badge">battle-root</span>
             </div>
@@ -204,8 +251,8 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Configuracion</h2>
               <span class="mini-badge">persistente</span>
             </div>
@@ -264,8 +311,8 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card" id="saves-panel">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Saves</h2>
               <span class="mini-badge">archivo</span>
             </div>
@@ -277,32 +324,8 @@
             <input id="save-file-input" type="file" accept=".sav,.json,.txt" hidden />
           </section>
 
-          <section class="panel-block library-panel" id="library-panel">
-            <div class="panel-heading">
-              <h2>Biblioteca</h2>
-              <span class="mini-badge">coleccion</span>
-            </div>
-            <section class="library-showcase" id="library-showcase" aria-label="Biblioteca local">
-              <div class="library-toolbar" aria-label="Vista de biblioteca">
-                <div class="library-view-toggle" role="group" aria-label="Cambiar vista">
-                  <button type="button" class="library-view-btn" data-library-view="shelf">Shelf</button>
-                  <button type="button" class="library-view-btn" data-library-view="grid">Grid</button>
-                  <button type="button" class="library-view-btn" data-library-view="detail">Detail</button>
-                </div>
-              </div>
-              <article class="library-hero" id="library-hero">
-                <div class="library-hero-meta">
-                  <span class="library-pill" id="library-hero-system">Sin sistema</span>
-                  <span class="library-pill library-pill--sync" id="save-sync-chip">Solo local</span>
-                  <span class="library-pill library-pill--subtle" id="library-hero-time">Sin historial</span>
-                </div>
-              </article>
-              <div class="library-grid" id="library-grid"></div>
-            </section>
-          </section>
-
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Nube Supabase</h2>
               <span class="mini-badge" id="cloud-badge">offline</span>
             </div>
@@ -332,8 +355,8 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>BIOS PS1</h2>
               <span class="mini-badge" id="ps1-bios-badge">pendiente</span>
             </div>
@@ -343,8 +366,8 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Remapeo de teclas</h2>
               <span class="mini-badge">input</span>
             </div>
@@ -368,8 +391,8 @@
             </div>
           </section>
 
-          <section class="panel-block">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card" id="cheats-panel">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Cheats / codigos</h2>
               <span class="mini-badge" id="cheat-count-badge">0 activos</span>
             </div>
@@ -395,8 +418,8 @@
             <div id="cheat-list" class="cheat-list"></div>
           </section>
 
-          <section class="panel-block debug-panel">
-            <div class="panel-heading">
+          <section class="panel-block archive-panel-card debug-panel">
+            <div class="panel-heading flex items-start justify-between gap-3">
               <h2>Estado visible</h2>
               <span class="mini-badge">debug</span>
             </div>
