@@ -3007,7 +3007,14 @@ function applyVisualPrefs() {
     elements.systemNavBtn.classList.toggle("archive-nav-link--active", uiState.drawerOpen);
   }
   if (elements.focusModeBtn) {
-    elements.focusModeBtn.textContent = uiState.focusMode ? "Salir enfoque" : "Modo enfoque";
+    const focusLabel = uiState.focusMode ? "Salir enfoque" : "Modo enfoque";
+    if (elements.focusModeBtn.dataset.iconOnly === "true") {
+      elements.focusModeBtn.setAttribute("aria-label", focusLabel);
+      elements.focusModeBtn.setAttribute("title", focusLabel);
+      elements.focusModeBtn.classList.toggle("is-active", uiState.focusMode);
+    } else {
+      elements.focusModeBtn.textContent = focusLabel;
+    }
     elements.focusModeBtn.setAttribute("aria-pressed", String(uiState.focusMode));
   }
   if (elements.focusBar) {

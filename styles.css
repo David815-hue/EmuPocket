@@ -7459,6 +7459,7 @@ body.archive-stitch-body .console-shell-host {
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  container-type: inline-size;
 }
 
 body.archive-stitch-body[data-system="gbc"] .console-shell.system-shell--gbc {
@@ -7501,10 +7502,20 @@ body.archive-stitch-body .archive-console-layout {
   margin: 0 auto;
 }
 
+body.archive-stitch-body[data-system="psp"] .archive-console-layout,
+body.archive-stitch-body[data-system="psp"] .archive-console-floatbar {
+  width: min(100%, 980px);
+}
+
+body.archive-stitch-body[data-system="psp"] .console-shell.system-shell--psp {
+  --psp-shell-scale: clamp(0.9, calc((100cqi - 28px) / 643px), 1.48);
+}
+
 body.archive-stitch-body .archive-console-floatbar {
   display: flex;
-  width: 100%;
   justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
   margin: 0 auto 14px;
   width: min(100%, 760px);
 }
@@ -7525,6 +7536,12 @@ body.archive-stitch-body .archive-icon-pill {
 
 body.archive-stitch-body .archive-icon-pill:hover {
   background: #f8f6f1;
+}
+
+body.archive-stitch-body .archive-icon-pill.is-active {
+  background: #27443b;
+  color: #ffffff;
+  border-color: #27443b;
 }
 
 body.archive-stitch-body .archive-icon-pill:active {
